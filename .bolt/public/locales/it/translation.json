@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "Funzionalità",
+    "pricing": "Prezzi",
+    "startScraping": "Inizia Estrazione",
+    "dashboard": "Dashboard",
+    "newExtraction": "Nuova Estrazione",
+    "community": "Community",
+    "joinCommunity": "Unisciti alla Community",
+    "backToHome": "Torna alla Home"
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signUp": "Registrati",
+    "email": "Indirizzo email",
+    "password": "Password",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "signOut": "Esci"
+  },
+  "home": {
+    "title": "Sfuggi all'Algoritmo. Accedi ai Dati. Controlla la Rete.",
+    "subtitle": "Software avanzato di web scraping che estrae nomi, numeri, email e tutte le informazioni rilevanti dai follower e dagli hashtag di Instagram.",
+    "startButton": "Inizia l'Estrazione Ora",
+    "demoButton": "Prova la Demo"
+  },
+  "dashboard": {
+    "welcome": "Bentornato, {{name}}. La Griglia ti aspetta.",
+    "subtitle": "Il tuo gateway per l'estrazione avanzata dei dati.",
+    "overview": "Panoramica",
+    "orders": "Ordini e Cronologia",
+    "subscription": "Il Mio Abbonamento",
+    "credits": "I Miei Crediti",
+    "export": "Esporta Dati",
+    "settings": "Impostazioni",
+    "referrals": "Referral",
+    "support": "Supporto"
+  }
+}
