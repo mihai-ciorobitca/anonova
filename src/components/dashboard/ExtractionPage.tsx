@@ -59,6 +59,7 @@ interface ExtractionConfig {
   isHashtagMode: boolean;
   profileUrl: string;
   hashtag: string;
+  domain: string;
   state?: string;
   country: string;
   language: string;
@@ -115,6 +116,7 @@ const ExtractionPage = () => {
     isHashtagMode: false,
     profileUrl: '',
     hashtag: '',
+    domain: '@google.com',
     state: '',
     country: 'us',
     language: 'en',
@@ -327,62 +329,6 @@ const ExtractionPage = () => {
                     ))}
                   </ul>
                 </div>
-                {/* Collection Type - Hide for LinkedIn */}
-                {extractionConfig.platform !== 'linkedin' && (
-                  <div className="mt-6">
-                  <label className="block text-sm text-gray-400 mb-2">Collection Type</label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <button
-                      onClick={() => setExtractionConfig(prev => ({ 
-                        ...prev, 
-                        isHashtagMode: true,
-                        extractFollowers: false,
-                        extractFollowing: false
-                      }))}
-                      className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                        extractionConfig.isHashtagMode
-                          ? 'border-[#0F0] bg-[#0F0]/10'
-                          : 'border-gray-700 hover:border-[#0F0]/50'
-                      }`}
-                    >
-                      <Hash className="w-4 h-4" />
-                      <span>HT</span>
-                    </button>
-                    <button
-                      onClick={() => setExtractionConfig(prev => ({ 
-                        ...prev, 
-                        isHashtagMode: false,
-                        extractFollowers: true,
-                        extractFollowing: false
-                      }))}
-                      className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                        !extractionConfig.isHashtagMode && extractionConfig.extractFollowers
-                          ? 'border-[#0F0] bg-[#0F0]/10'
-                          : 'border-gray-700 hover:border-[#0F0]/50'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>FL</span>
-                    </button>
-                    <button
-                      onClick={() => setExtractionConfig(prev => ({ 
-                        ...prev, 
-                        isHashtagMode: false,
-                        extractFollowers: false,
-                        extractFollowing: true
-                      }))}
-                      className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                        !extractionConfig.isHashtagMode && extractionConfig.extractFollowing
-                          ? 'border-[#0F0] bg-[#0F0]/10'
-                          : 'border-gray-700 hover:border-[#0F0]/50'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>FO</span>
-                    </button>
-                  </div>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -396,31 +342,19 @@ const ExtractionPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Max Leads per Input</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={extractionConfig.maxLeadsPerInput || 100}
-                    onChange={(e) => setExtractionConfig(prev => ({ 
-                      ...prev, 
-                      maxLeadsPerInput: Math.min(1000, Math.max(100, parseInt(e.target.value) || 100))
-                    }))}
-                    min="100"
-                    max="1000"
-                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    placeholder="100"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    leads
+              {extractionConfig.platform === 'twitter' && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Domain</label>
+                    <input
+                      type="text"
+                      value={extractionConfig.domain}
+                      onChange={(e) => setExtractionConfig(prev => ({ ...prev, domain: e.target.value }))}
+                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                      placeholder="Enter a Domain"
+                    />
                   </div>
-                </div>
-                <p className="mt-1 text-xs text-gray-400">Enter between 100-1000 leads per input</p>
-              </div>
 
-              {/* LinkedIn-specific fields */}
-              {extractionConfig.platform === 'linkedin' && (
-                <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Country</label>
                     <select
@@ -457,8 +391,30 @@ const ExtractionPage = () => {
                       <option value="sv">Swedish</option>
                     </select>
                   </div>
-                </div>
+                </>
               )}
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Max Leads per Input</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={extractionConfig.maxLeadsPerInput || 100}
+                    onChange={(e) => setExtractionConfig(prev => ({ 
+                      ...prev, 
+                      maxLeadsPerInput: Math.min(1000, Math.max(100, parseInt(e.target.value) || 100))
+                    }))}
+                    min="100"
+                    max="1000"
+                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                    placeholder="100"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                    leads
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-400">Enter between 100-1000 leads per input</p>
+              </div>
 
               <Button 
                 className="w-full"

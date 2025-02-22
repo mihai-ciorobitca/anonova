@@ -8,13 +8,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Ensure URL is properly formatted
+const formattedUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
+
+export const supabase = createClient<Database>(formattedUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: false,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    debug: true // Enable debug mode temporarily to help diagnose issues
+    debug: true
   },
   db: {
     schema: 'public'
@@ -26,7 +29,6 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Add error logging
 supabase.auth.onAuthStateChange((event, session) => {
   console.log('Auth state changed:', event, session);
 });
