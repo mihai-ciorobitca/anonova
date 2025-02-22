@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Funzionalità",
+    "pricing": "Prezzi",
+    "startScraping": "Inizia Estrazione",
+    "dashboard": "Dashboard",
+    "newExtraction": "Nuova Estrazione",
+    "community": "Community",
+    "joinCommunity": "Unisciti alla Community"
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signUp": "Registrati",
+    "email": "Indirizzo email",
+    "password": "Password",
+    "firstName": "Nome",
+    "lastName": "Cognome"
+  },
+  "dashboard": {
+    "welcome": "Bentornato, {{name}}. La Griglia ti aspetta.",
+    "overview": "Panoramica",
+    "orders": "Ordini e Cronologia",
+    "subscription": "Il Mio Abbonamento",
+    "credits": "I Miei Crediti",
+    "export": "Esporta Dati",
+    "settings": "Impostazioni",
+    "referrals": "Referral",
+    "support": "Supporto"
+  }
+}

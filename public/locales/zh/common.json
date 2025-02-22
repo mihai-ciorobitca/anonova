@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "功能",
+    "pricing": "价格",
+    "startScraping": "开始提取",
+    "dashboard": "控制面板",
+    "newExtraction": "新建提取",
+    "community": "社区",
+    "joinCommunity": "加入社区"
+  },
+  "auth": {
+    "signIn": "登录",
+    "signUp": "注册",
+    "email": "电子邮箱",
+    "password": "密码",
+    "firstName": "名",
+    "lastName": "姓"
+  },
+  "dashboard": {
+    "welcome": "欢迎回来，{{name}}。网格等待着你。",
+    "overview": "概览",
+    "orders": "订单和历史",
+    "subscription": "我的订阅",
+    "credits": "我的积分",
+    "export": "导出数据",
+    "settings": "设置",
+    "referrals": "推荐",
+    "support": "支持"
+  }
+}

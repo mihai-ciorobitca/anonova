@@ -1,0 +1,225 @@
+{
+  "header": {
+    "features": "Funktionen",
+    "pricing": "Preise",
+    "startScraping": "Extraktion Starten",
+    "dashboard": "Dashboard",
+    "newExtraction": "Neue Extraktion",
+    "community": "Community",
+    "joinCommunity": "Community Beitreten",
+    "backToHome": "Zurück zur Startseite"
+  },
+  "auth": {
+    "signIn": "Anmelden",
+    "signUp": "Registrieren",
+    "email": "E-Mail-Adresse",
+    "password": "Passwort",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "signOut": "Abmelden"
+  },
+  "home": {
+    "title": "Entkomme dem Algorithmus. Greife auf Daten zu. Kontrolliere das Netzwerk.",
+    "subtitle": "Fortschrittliche Web-Scraping-Software, die Namen, Nummern, E-Mails und alle relevanten Informationen von Instagram-Followern und Hashtags extrahiert.",
+    "startButton": "Jetzt mit der Extraktion beginnen",
+    "demoButton": "Demo testen"
+  },
+  "pricing": {
+    "title": "Wählen Sie Ihre Zugangsebene",
+    "subtitle": "Erschließen Sie das volle Potenzial der Datenextraktion mit unseren flexiblen Plänen",
+    "monthly": "Monatlich",
+    "annual": "Jährlich",
+    "save": "20% sparen",
+    "perMonth": "/Monat",
+    "billedAnnually": "Jährlich abgerechnet",
+    "saveAmount": "Sparen Sie {{amount}}/Jahr",
+    "includedCredits": "Enthält {{count}} Credits",
+    "perCredit": "pro Credit",
+    "creditEqualsContact": "1 Credit = 1 Kontakt",
+    "minimumPurchase": "Mindestabnahme:",
+    "credits": "Credits",
+    "currentPlan": "Aktueller Plan",
+    "upgradePlan": "Plan upgraden",
+    "features": {
+      "title": "Vertrauen Sie uns",
+      "encryption": "Militärische Verschlüsselung",
+      "security": "KI-gestützte Sicherheit",
+      "uptime": "99,9% Verfügbarkeit",
+      "subtitle": {
+        "encryption": "Ihre Daten sind mit AES-256-Verschlüsselung geschützt",
+        "security": "Fortschrittliche Algorithmen schützen vor Erkennung",
+        "uptime": "Enterprise-Grade Infrastruktur-Zuverlässigkeit"
+      }
+    },
+    "plans": {
+      "free": {
+        "name": "Kostenloser Plan",
+        "price": "Keine monatliche Gebühr",
+        "features": [
+          "Grundlegende Datenextraktion",
+          "Export als CSV",
+          "E-Mail-Support",
+          "Pay-as-you-go",
+          "Keine monatlichen Gebühren"
+        ]
+      },
+      "pro": {
+        "name": "Pro Plan",
+        "features": [
+          "Erweiterte Datenextraktion",
+          "Alle Exportformate",
+          "Prioritäts-Support",
+          "Massenextraktion",
+          "Ghost-Mode-Scraping"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise Plan",
+        "features": [
+          "Unbegrenzte Datenextraktion",
+          "Dedizierter Support",
+          "Team-Zusammenarbeit",
+          "Erweiterte Analysen",
+          "Mengenrabatte"
+        ]
+      }
+    }
+  },
+  "subscription": {
+    "title": "Mein Abonnement",
+    "subtitle": "Verwalten Sie Ihren Abonnementplan und Einstellungen",
+    "currentPlan": {
+      "title": "Aktueller Plan",
+      "status": "Status",
+      "active": "Aktiv",
+      "nextBilling": "Nächste Abrechnung",
+      "paymentMethod": "Zahlungsmethode",
+      "cardEnding": "Karte endend auf",
+      "update": "Aktualisieren"
+    },
+    "billingHistory": {
+      "title": "Abrechnungsverlauf",
+      "amount": "Betrag",
+      "date": "Datum",
+      "status": {
+        "paid": "Bezahlt",
+        "pending": "Ausstehend",
+        "failed": "Fehlgeschlagen"
+      },
+      "download": "Herunterladen"
+    },
+    "availablePlans": {
+      "title": "Verfügbare Pläne",
+      "popular": "Beliebtester Plan",
+      "currentPlan": "Aktueller Plan",
+      "upgradePlan": "Plan upgraden",
+      "billingCycle": {
+        "monthly": "Monatlich",
+        "annual": "Jährlich",
+        "savePercent": "Sparen Sie {{percent}}%"
+      }
+    }
+  },
+  "credits": {
+    "title": "Credits kaufen",
+    "subtitle": "Fügen Sie Ihrem Konto basierend auf Ihrem Abonnementplan weitere Credits hinzu",
+    "currentStatus": {
+      "title": "Aktueller Status",
+      "currentPlan": "Aktueller Plan",
+      "activeSubscription": "Aktives Abonnement",
+      "availableCredits": "Verfügbare Credits",
+      "currentBalance": "Aktuelles Guthaben",
+      "standardRate": "Standard-Credit-Rate",
+      "whenMeetingMinimum": "Bei Erreichen des Plan-Minimums",
+      "belowMinimumRate": "Rate unter Minimum",
+      "forSmallerPurchases": "Für kleinere Käufe"
+    },
+    "purchaseCredits": {
+      "title": "Credits kaufen",
+      "numberOfCredits": "Anzahl der Credits",
+      "currentRate": "Aktueller Kurs",
+      "higherRateApplies": "Höherer Kurs gilt",
+      "estimatedFee": "Geschätzte Gebühr",
+      "total": "Gesamt",
+      "purchaseButton": "Credits kaufen",
+      "neverExpire": "Credits verfallen nie und können jederzeit verwendet werden"
+    }
+  },
+  "startScraping": {
+    "title": "Extraktion Starten",
+    "subtitle": "Konfigurieren Sie Ihre Extraktionseinstellungen",
+    "accessTools": "Greifen Sie auf Ihre Extraktionstools zu",
+    "createAccount": "Erstellen Sie ein Konto, um mit der Datenextraktion zu beginnen",
+    "noAccount": "Noch kein Konto? Jetzt registrieren",
+    "hasAccount": "Bereits ein Konto? Anmelden",
+    "dataProtection": "Ihre Daten sind durch Ende-zu-Ende-Verschlüsselung geschützt",
+    "features": "Extraktionsfunktionen",
+    "featuresSubtitle": "Zugriff auf leistungsstarke Extraktionstools",
+    "feature1": "Blitzschnelle Datenextraktion",
+    "feature2": "Militärische Verschlüsselung",
+    "feature3": "Erweiterte Filtermöglichkeiten",
+    "feature4": "Massenprofilverarbeitung",
+    "extractionMode": "Extraktionsmodus",
+    "profile": "Profil",
+    "hashtag": "Hashtag",
+    "enterHashtag": "Hashtag ohne # eingeben",
+    "profileUrl": "Profil-URL",
+    "dataToExtract": "Zu extrahierende Daten",
+    "followers": "Follower",
+    "following": "Folgt",
+    "creditsToUse": "Zu verwendende Credits",
+    "minimumRequired": "Mindestens 500 Credits erforderlich",
+    "firstExtraction": "Erste Extraktion: Nur 1 Credit benötigt!",
+    "startExtraction": "EXTRAKTION_STARTEN.exe",
+    "minimumCredits": "Mindest-Credits",
+    "perExtraction": "Pro Extraktion",
+    "securityFeatures": "Sicherheitsfunktionen",
+    "ghostMode": "Ghost-Modus für unentdeckbare Extraktion",
+    "encryption": "Militärische Verschlüsselung (AES-256)",
+    "proxyNetwork": "Automatische IP-Rotation über globales Proxy-Netzwerk",
+    "rateLimiting": "Intelligente Ratenbegrenzung zur Vermeidung von Erkennung"
+  },
+  "dashboard": {
+    "welcome": "Willkommen zurück, {{name}}. Das Grid wartet.",
+    "subtitle": "Ihr Tor zur fortgeschrittenen Datenextraktion.",
+    "overview": "Übersicht",
+    "orders": "Aufträge & Verlauf",
+    "subscription": "Mein Abonnement",
+    "subscriptionSubtitle": "Verwalten Sie Ihren Abonnementplan und Einstellungen",
+    "credits": "Credits",
+    "creditsSubtitle": "Fügen Sie Ihrem Konto basierend auf Ihrem Abonnementplan weitere Credits hinzu",
+    "export": "Daten Exportieren",
+    "exportSubtitle": "Exportieren Sie Ihre Instagram-Daten im CSV-Format",
+    "settings": "Einstellungen",
+    "profileSettings": "Profileinstellungen",
+    "referrals": "Empfehlungen",
+    "referralsSubtitle": "Verdienen Sie 20% in Krypto auf alle von Ihren Empfehlungen verwendeten Credits",
+    "support": "Support",
+    "supportSubtitle": "Erhalten Sie Hilfe von unserem KI-Assistenten, erstellen Sie Support-Tickets oder treten Sie der Community bei",
+    "actions": {
+      "newScrape": "Neue Extraktion starten",
+      "downloadData": "Daten herunterladen",
+      "buyCredits": "Weitere Credits kaufen",
+      "security": "Sicherheitseinstellungen"
+    },
+    "activity": {
+      "dataExport": "Datenexport",
+      "recordsExported": "{{count}} Datensätze exportiert",
+      "creditsPurchased": "Credits gekauft",
+      "creditsAdded": "{{count}} Credits hinzugefügt",
+      "extractionComplete": "Extraktion abgeschlossen",
+      "timeAgo": "vor {{time}}"
+    },
+    "creditsUsage": "Credits-Nutzung",
+    "creditsRemaining": "{{count}} Credits verbleibend",
+    "recentActivity": "Letzte Aktivitäten",
+    "watchTutorial": "Tutorial ansehen",
+    "mostWatched": "Meistgesehen",
+    "videos": {
+      "instagramGuide": "Instagram-Profilxtraktion",
+      "instagramDescription": "Lernen Sie, wie Sie Daten von Instagram-Profilen und Followern extrahieren",
+      "referralProgram": "Empfehlungsprogramm-Guide",
+      "referralDescription": "Erfahren Sie, wie Sie durch Empfehlungen Krypto verdienen können"
+    }
+  }
+}

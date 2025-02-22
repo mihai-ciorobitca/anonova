@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Возможности",
+    "pricing": "Цены",
+    "startScraping": "Начать Извлечение",
+    "dashboard": "Панель управления",
+    "newExtraction": "Новое Извлечение",
+    "community": "Сообщество",
+    "joinCommunity": "Присоединиться к сообществу"
+  },
+  "auth": {
+    "signIn": "Войти",
+    "signUp": "Регистрация",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "firstName": "Имя",
+    "lastName": "Фамилия"
+  },
+  "dashboard": {
+    "welcome": "С возвращением, {{name}}. Сеть ждет.",
+    "overview": "Обзор",
+    "orders": "Заказы и История",
+    "subscription": "Моя Подписка",
+    "credits": "Мои Кредиты",
+    "export": "Экспорт Данных",
+    "settings": "Настройки",
+    "referrals": "Рефералы",
+    "support": "Поддержка"
+  }
+}

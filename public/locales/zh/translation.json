@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "功能",
+    "pricing": "价格",
+    "startScraping": "开始提取",
+    "dashboard": "控制面板",
+    "newExtraction": "新建提取",
+    "community": "社区",
+    "joinCommunity": "加入社区",
+    "backToHome": "返回首页"
+  },
+  "auth": {
+    "signIn": "登录",
+    "signUp": "注册",
+    "email": "电子邮箱",
+    "password": "密码",
+    "firstName": "名",
+    "lastName": "姓",
+    "signOut": "退出"
+  },
+  "home": {
+    "title": "突破算法。获取数据。掌控网络。",
+    "subtitle": "先进的网络爬虫软件，可从Instagram粉丝和主题标签中提取姓名、号码、电子邮件和所有相关信息。",
+    "startButton": "立即开始提取",
+    "demoButton": "试用演示"
+  },
+  "dashboard": {
+    "welcome": "欢迎回来，{{name}}。网格等待着你。",
+    "subtitle": "您的高级数据提取门户。",
+    "overview": "概览",
+    "orders": "订单和历史",
+    "subscription": "我的订阅",
+    "credits": "我的积分",
+    "export": "导出数据",
+    "settings": "设置",
+    "referrals": "推荐",
+    "support": "支持"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Recursos",
+    "pricing": "Preços",
+    "startScraping": "Iniciar Extração",
+    "dashboard": "Painel",
+    "newExtraction": "Nova Extração",
+    "community": "Comunidade",
+    "joinCommunity": "Juntar-se à Comunidade"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Registrar",
+    "email": "Endereço de email",
+    "password": "Senha",
+    "firstName": "Nome",
+    "lastName": "Sobrenome"
+  },
+  "dashboard": {
+    "welcome": "Bem-vindo de volta, {{name}}. A Grid aguarda.",
+    "overview": "Visão Geral",
+    "orders": "Pedidos e Histórico",
+    "subscription": "Minha Assinatura",
+    "credits": "Meus Créditos",
+    "export": "Exportar Dados",
+    "settings": "Configurações",
+    "referrals": "Indicações",
+    "support": "Suporte"
+  }
+}

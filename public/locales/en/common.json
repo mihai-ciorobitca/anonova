@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "startScraping": "Start Scraping",
+    "dashboard": "Go to Dashboard",
+    "newExtraction": "Start New Extraction",
+    "community": "Community",
+    "joinCommunity": "Join Community"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email address",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name"
+  },
+  "dashboard": {
+    "welcome": "Welcome Back, {{name}}. The Grid Awaits.",
+    "overview": "Overview",
+    "orders": "Orders & History",
+    "subscription": "My Subscription",
+    "credits": "My Credits",
+    "export": "Data Export",
+    "settings": "Settings",
+    "referrals": "Referrals",
+    "support": "Support"
+  }
+}
