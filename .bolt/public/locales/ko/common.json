@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "기능",
+    "pricing": "가격",
+    "startScraping": "추출 시작",
+    "dashboard": "대시보드",
+    "newExtraction": "새 추출",
+    "community": "커뮤니티",
+    "joinCommunity": "커뮤니티 가입"
+  },
+  "auth": {
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "email": "이메일 주소",
+    "password": "비밀번호",
+    "firstName": "이름",
+    "lastName": "성"
+  },
+  "dashboard": {
+    "welcome": "돌아오신 것을 환영합니다, {{name}}. 그리드가 기다립니다.",
+    "overview": "개요",
+    "orders": "주문 및 기록",
+    "subscription": "내 구독",
+    "credits": "내 크레딧",
+    "export": "데이터 내보내기",
+    "settings": "설정",
+    "referrals": "추천",
+    "support": "지원"
+  }
+}

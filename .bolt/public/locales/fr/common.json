@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "startScraping": "Commencer l'Extraction",
+    "dashboard": "Tableau de Bord",
+    "newExtraction": "Nouvelle Extraction",
+    "community": "Communauté",
+    "joinCommunity": "Rejoindre la Communauté"
+  },
+  "auth": {
+    "signIn": "Se Connecter",
+    "signUp": "S'inscrire",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom"
+  },
+  "dashboard": {
+    "welcome": "Bon retour, {{name}}. La Grille vous attend.",
+    "overview": "Aperçu",
+    "orders": "Commandes et Historique",
+    "subscription": "Mon Abonnement",
+    "credits": "Mes Crédits",
+    "export": "Exporter les Données",
+    "settings": "Paramètres",
+    "referrals": "Parrainages",
+    "support": "Support"
+  }
+}

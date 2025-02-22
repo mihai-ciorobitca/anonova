@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "Recursos",
+    "pricing": "Preços",
+    "startScraping": "Iniciar Extração",
+    "dashboard": "Painel",
+    "newExtraction": "Nova Extração",
+    "community": "Comunidade",
+    "joinCommunity": "Juntar-se à Comunidade",
+    "backToHome": "Voltar ao Início"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Registrar",
+    "email": "Endereço de email",
+    "password": "Senha",
+    "firstName": "Nome",
+    "lastName": "Sobrenome",
+    "signOut": "Sair"
+  },
+  "home": {
+    "title": "Escape do Algoritmo. Acesse os Dados. Controle a Rede.",
+    "subtitle": "Software avançado de extração web que extrai nomes, números, emails e todas as informações relevantes de seguidores e hashtags do Instagram.",
+    "startButton": "Começar a Extrair Agora",
+    "demoButton": "Experimentar Demo"
+  },
+  "dashboard": {
+    "welcome": "Bem-vindo de volta, {{name}}. A Grid aguarda.",
+    "subtitle": "Seu portal para extração avançada de dados.",
+    "overview": "Visão Geral",
+    "orders": "Pedidos e Histórico",
+    "subscription": "Minha Assinatura",
+    "credits": "Meus Créditos",
+    "export": "Exportar Dados",
+    "settings": "Configurações",
+    "referrals": "Indicações",
+    "support": "Suporte"
+  }
+}

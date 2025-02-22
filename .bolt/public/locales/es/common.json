@@ -1,0 +1,30 @@
+{
+  "header": {
+    "features": "Características",
+    "pricing": "Precios",
+    "startScraping": "Comenzar Extracción",
+    "dashboard": "Ir al Panel",
+    "newExtraction": "Nueva Extracción",
+    "community": "Comunidad",
+    "joinCommunity": "Unirse a la Comunidad"
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "firstName": "Nombre",
+    "lastName": "Apellido"
+  },
+  "dashboard": {
+    "welcome": "Bienvenido de nuevo, {{name}}. La Red te espera.",
+    "overview": "Vista General",
+    "orders": "Pedidos e Historial",
+    "subscription": "Mi Suscripción",
+    "credits": "Mis Créditos",
+    "export": "Exportar Datos",
+    "settings": "Configuración",
+    "referrals": "Referencias",
+    "support": "Soporte"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "startScraping": "Commencer l'Extraction",
+    "dashboard": "Tableau de Bord",
+    "newExtraction": "Nouvelle Extraction",
+    "community": "Communauté",
+    "joinCommunity": "Rejoindre la Communauté",
+    "backToHome": "Retour à l'Accueil"
+  },
+  "auth": {
+    "signIn": "Se Connecter",
+    "signUp": "S'inscrire",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "signOut": "Se Déconnecter"
+  },
+  "home": {
+    "title": "Échappez à l'Algorithme. Accédez aux Données. Contrôlez le Réseau.",
+    "subtitle": "Logiciel avancé d'extraction web qui extrait les noms, numéros, emails et toutes les informations pertinentes des abonnés et hashtags Instagram.",
+    "startButton": "Commencer l'Extraction",
+    "demoButton": "Essayer la Démo"
+  },
+  "dashboard": {
+    "welcome": "Bon retour, {{name}}. La Grille vous attend.",
+    "subtitle": "Votre passerelle vers l'extraction avancée de données.",
+    "overview": "Aperçu",
+    "orders": "Commandes et Historique",
+    "subscription": "Mon Abonnement",
+    "credits": "Mes Crédits",
+    "export": "Exporter les Données",
+    "settings": "Paramètres",
+    "referrals": "Parrainages",
+    "support": "Support"
+  }
+}

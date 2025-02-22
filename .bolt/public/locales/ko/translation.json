@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "기능",
+    "pricing": "가격",
+    "startScraping": "추출 시작",
+    "dashboard": "대시보드",
+    "newExtraction": "새 추출",
+    "community": "커뮤니티",
+    "joinCommunity": "커뮤니티 가입",
+    "backToHome": "홈으로 돌아가기"
+  },
+  "auth": {
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "email": "이메일 주소",
+    "password": "비밀번호",
+    "firstName": "이름",
+    "lastName": "성",
+    "signOut": "로그아웃"
+  },
+  "home": {
+    "title": "알고리즘을 벗어나세요. 데이터에 접근하세요. 네트워크를 제어하세요.",
+    "subtitle": "Instagram 팔로워와 해시태그에서 이름, 번호, 이메일 및 모든 관련 정보를 추출하는 고급 웹 스크래핑 소프트웨어.",
+    "startButton": "지금 추출 시작하기",
+    "demoButton": "데모 체험하기"
+  },
+  "dashboard": {
+    "welcome": "돌아오신 것을 환영합니다, {{name}}. 그리드가 기다립니다.",
+    "subtitle": "고급 데이터 추출을 위한 게이트웨이.",
+    "overview": "개요",
+    "orders": "주문 및 기록",
+    "subscription": "내 구독",
+    "credits": "내 크레딧",
+    "export": "데이터 내보내기",
+    "settings": "설정",
+    "referrals": "추천",
+    "support": "지원"
+  }
+}

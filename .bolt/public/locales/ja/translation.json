@@ -1,0 +1,39 @@
+{
+  "header": {
+    "features": "機能",
+    "pricing": "料金",
+    "startScraping": "抽出を開始",
+    "dashboard": "ダッシュボード",
+    "newExtraction": "新規抽出",
+    "community": "コミュニティ",
+    "joinCommunity": "コミュニティに参加",
+    "backToHome": "ホームに戻る"
+  },
+  "auth": {
+    "signIn": "ログイン",
+    "signUp": "登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "firstName": "名",
+    "lastName": "姓",
+    "signOut": "ログアウト"
+  },
+  "home": {
+    "title": "アルゴリズムから解放。データにアクセス。ネットワークをコントロール。",
+    "subtitle": "Instagramのフォロワーとハッシュタグから名前、電話番号、メール、その他の関連情報を抽出する高度なウェブスクレイピングソフトウェア。",
+    "startButton": "今すぐ抽出を開始",
+    "demoButton": "デモを試す"
+  },
+  "dashboard": {
+    "welcome": "お帰りなさい、{{name}}。グリッドがお待ちです。",
+    "subtitle": "高度なデータ抽出へのゲートウェイ。",
+    "overview": "概要",
+    "orders": "注文と履歴",
+    "subscription": "サブスクリプション",
+    "credits": "クレジット",
+    "export": "データエクスポート",
+    "settings": "設定",
+    "referrals": "紹介",
+    "support": "サポート"
+  }
+}
