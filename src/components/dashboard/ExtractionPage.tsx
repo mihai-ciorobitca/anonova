@@ -114,7 +114,7 @@ const ExtractionPage = () => {
     state: "",
     country: "us",
     language: "en",
-    maxResults: 1000,
+    maxResults: 100000000,
     maxLeadsPerInput: 10,
     extractFollowers: true,
     extractFollowing: false,
@@ -181,6 +181,44 @@ const ExtractionPage = () => {
           data: results,
           error: "none",
         });
+
+        try {
+          // Save linkedin order to Supabase order table
+          const { error: ordersError } = await supabase.from("orders").insert({
+            user_id: user.id,
+            source_type: null,
+            results_id: results.id,
+            status_display: results.status_display,
+            source: source,
+            max_leads: extractionConfig.maxLeadsPerInput,
+          });
+
+          if (ordersError) throw ordersError;
+
+          setExtractionResult({
+            status: results.status_display || "In the queue",
+            data: results,
+            error: "none",
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          // Handle specific database errors
+          if (dbError.message?.includes("Minimum credits required")) {
+            throw new Error(
+              hasUsedFreeCredits
+                ? "Minimum 500 credits required for extraction."
+                : "Minimum 1 credit required for first extraction."
+            );
+          } else if (dbError.message?.includes("Insufficient credits")) {
+            throw new Error(
+              "Not enough credits available. Please purchase more credits to continue."
+            );
+          } else if (dbError.message?.includes("Source is required")) {
+            throw new Error("Please enter a valid target.");
+          } else {
+            throw new Error("Failed to save order. Please try again.");
+          }
+        }
       } else if (extractionConfig.platform === "instagram") {
         // Use runAnonovaExtraction for Instagram
         const taskType = extractionConfig.isHashtagMode
@@ -466,14 +504,11 @@ const ExtractionPage = () => {
                     onChange={(e) =>
                       setExtractionConfig((prev) => ({
                         ...prev,
-                        maxLeadsPerInput: Math.max(
-                          10,
-                          parseInt(e.target.value) || 10
-                        ),
+                        maxLeadsPerInput: parseInt(e.target.value) || 10,
                       }))
                     }
-                    min="10"
-                    max="1000"
+                    min={10}
+                    max={extractionConfig.maxResults}
                     className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
                     placeholder="10"
                   />

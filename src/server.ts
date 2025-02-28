@@ -1,8 +1,14 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
+
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import os from "os";
 
 const app = express();
+
+const PORT = 3000;
 
 // Enable CORS for all routes
 app.use(
@@ -20,7 +26,7 @@ app.options("*", cors());
 app.use(express.json());
 
 // APIFY
-const APIFY_TOKEN = "apify_api_gMbqZhXamZ8oYG7fFNuMl3mrLdpodY093Upy";
+const APIFY_TOKEN = "apify_api_T7QbfS4QT59lCgRsbtaYX1OwDx4mWo4n6oLU";
 const APIFY_API_BASE = "https://api.apify.com/v2";
 
 // LINKEDIN
@@ -175,26 +181,61 @@ app.post("/api/orders/create", async (req, res) => {
 
 app.get("/api/orders/:order_id/download", async (req, res) => {
   try {
-    const response = await fetch(
-      `${ANONOVA_API_BASE}/${req.params.order_id}/download`,
-      {
-        headers: {
-          "X-API-Key": ANONOVA_API_KEY,
-        },
-      }
-    );
+    const orderId = req.params.order_id;
+    const apiUrl = `${ANONOVA_API_BASE}/${orderId}/download`;
+
+    // Fetch CSV from external API
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "X-API-Key": ANONOVA_API_KEY,
+        accept: "*/*",
+      },
+    });
 
     if (!response.ok) {
       throw new Error(
-        `Failed to download order: ${response.status} ${response.statusText}`
+        `Failed to fetch order: ${response.status} ${response.statusText}`
       );
     }
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const csvText = await response.text();
+
+    // Generate a random filename (UUID-like)
+    const blobName = crypto.randomUUID(); // Generates a unique ID
+    const filename = `${blobName}.csv`; // Example: "3f81d5c0-9b32-41ad-940b-b7612f71f013.csv"
+
+    // Define the public folder path
+    const PUBLIC_FOLDER = path.join(process.cwd(), "downloads");
+
+    // Ensure the public folder exists
+    if (!fs.existsSync(PUBLIC_FOLDER)) {
+      fs.mkdirSync(PUBLIC_FOLDER);
+    }
+
+    // Write CSV text to a file
+    const filePath = path.join(PUBLIC_FOLDER, filename);
+    fs.writeFileSync(filePath, csvText);
+
+    console.log(`✅ Order CSV saved as: ${filename}`);
+
+    // Generate the download URL
+    const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
+    res.status(200).json({ downloadUrl });
   } catch (error) {
-    console.error("Proxy error:", error);
-    res.status(500).json({ error: "Proxy request failed" });
+    console.error("❌ Error:", error);
+    res.status(500).json({ error: "Failed to generate CSV file" });
+  }
+});
+
+app.get("/download/:filename", (req, res) => {
+  const PUBLIC_FOLDER = path.join(process.cwd(), "downloads");
+  const filePath = path.join(PUBLIC_FOLDER, req.params.filename);
+
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    res.status(404).send("File not found");
   }
 });
 
@@ -245,7 +286,6 @@ app.get("/api/orders/list", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log("CORS enabled for all origins");

@@ -54,8 +54,8 @@ const OrdersHistory = () => {
     "all" | "instagram" | "linkedin" | "facebook" | "twitter"
   >("all");
   const [loading, setLoading] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // Status check interval
   useEffect(() => {
@@ -148,7 +148,7 @@ const OrdersHistory = () => {
     };
 
     // Check status every minute
-    const interval = setInterval(updateOrders, 10000);
+    const interval = setInterval(updateOrders, 600000);
     return () => clearInterval(interval);
   }, [orders]);
 
@@ -194,17 +194,18 @@ const OrdersHistory = () => {
   };
 
   const filteredOrders = orders.filter((order) => {
-    if (!searchQuery) return true;
-
     // Filter by platform if selected
     if (selectedPlatform !== "all" && order.platform !== selectedPlatform) {
       return false;
     }
 
+    if (!searchQuery) return true;
+
     const query = searchQuery.toLowerCase();
     return (
       order.source.toLowerCase().includes(query) ||
-      order.source_type.toLowerCase().includes(query)
+      order.source_type.toLowerCase().includes(query) ||
+      order.platform.toLowerCase().includes(query)
     );
   });
 
@@ -335,18 +336,22 @@ const OrdersHistory = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Platform
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                  Source Type
-                </th>
+                {selectedPlatform !== "linkedin" && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
+                    Source Type
+                  </th>
+                )}
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Status
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Order ID
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                  Source
-                </th>
+                {selectedPlatform !== "linkedin" && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
+                    Source
+                  </th>
+                )}
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Max Leads
                 </th>
@@ -388,16 +393,18 @@ const OrdersHistory = () => {
                         <span className="capitalize">{selectedPlatform}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
-                      <div className="flex items-center gap-2">
-                        {order.source_type === "HT" ? (
-                          <Hash className="w-4 h-4" />
-                        ) : (
-                          <Users className="w-4 h-4" />
-                        )}
-                        {order.source_type}
-                      </div>
-                    </td>
+                    {selectedPlatform !== "linkedin" && (
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        <div className="flex items-center gap-2">
+                          {order.source_type === "HT" ? (
+                            <Hash className="w-4 h-4" />
+                          ) : (
+                            <Users className="w-4 h-4" />
+                          )}
+                          {order.source_type}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -414,9 +421,11 @@ const OrdersHistory = () => {
                     <td className="px-6 py-4 font-mono text-[#0F0]">
                       {order.results_id}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
-                      {order.source}
-                    </td>
+                    {selectedPlatform !== "linkedin" && (
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        {order.source}
+                      </td>
+                    )}
                     <td className="px-6 py-4 text-sm text-gray-300">
                       {order.max_leads}
                     </td>

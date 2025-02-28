@@ -24,7 +24,7 @@ app.options('*', cors());
 app.use(express.json());
 
 // APIFY
-const APIFY_TOKEN = 'apify_api_gMbqZhXamZ8oYG7fFNuMl3mrLdpodY093Upy';
+const APIFY_TOKEN = 'apify_api_T7QbfS4QT59lCgRsbtaYX1OwDx4mWo4n6oLU';
 const APIFY_API_BASE = 'https://api.apify.com/v2';
 
 // LINKEDIN
