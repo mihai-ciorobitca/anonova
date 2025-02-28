@@ -39,7 +39,7 @@ const SettingsPage = () => {
     }),
     lastLogin: 'Today at 2:30 PM',
     timezone: 'UTC-5 (Eastern Time)',
-    role: 'Loading...' // Will be updated when plan is fetched
+    role: '' // Will be updated when plan is fetched
   });
 
   // Fetch user's plan when component mounts
@@ -50,13 +50,18 @@ const SettingsPage = () => {
       try {
         const { data, error } = await supabase
           .from('users')
-          .select('plan_id')
+          .select(`
+            plan_id,
+            pricing_plans (
+              name
+            )
+          `)
           .eq('id', user.id)
           .single();
 
         if (error) throw error;
 
-        const planName = data.plan_id ? PLAN_NAMES[data.plan_id as keyof typeof PLAN_NAMES] : 'Free Plan';
+        const planName = data?.pricing_plans?.name || 'Free Plan';
         setUserPlan(planName);
         setProfileData(prev => ({
           ...prev,
@@ -262,7 +267,8 @@ const SettingsPage = () => {
                 <img
                   src={profileData.avatar}
                   alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover border-2 border-[#0F0]/50"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-[#0F0]/50 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => fileInputRef.current?.click()}
                 />
                 <input
                   type="file"

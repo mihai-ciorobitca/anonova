@@ -8,7 +8,7 @@ export interface ApifyInput {
   };
 }
 
-export interface ExtractedData {
+export interface ApifyExtractedData {
   lead: string;
   username?: string;
   userLink: string;
@@ -17,11 +17,31 @@ export interface ExtractedData {
   summary?: string;
 }
 
+interface ApiResponse<T> {
+  data: T;
+  error?: {
+    type?: string;
+    message?: string;
+  };
+}
+
+interface RunData {
+  id: string;
+}
+
+interface StatusData {
+  status: string;
+  dataset?: any[];
+  errorMessage?: string;
+}
+
 const API_BASE = "/api/apify";
+const MAX_ATTEMPTS = 30;
+const POLL_INTERVAL = 10000; // 10 seconds
 
 export const runApifyExtraction = async (
   input: ApifyInput
-): Promise<ExtractedData[]> => {
+): Promise<ApifyExtractedData[]> => {
   try {
     // Validate input
     if (!input.keyword) {
@@ -39,11 +59,17 @@ export const runApifyExtraction = async (
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to start extraction");
+      const errorResponse: ApiResponse<null> = await response.json();
+      
+      // Handle specific Apify errors
+      if (errorResponse.error?.type === 'actor-is-not-rented') {
+        throw new Error('Service temporarily unavailable. Please try again later or contact support.');
+      }
+      
+      throw new Error(errorResponse.error?.message || "Failed to start extraction");
     }
 
-    const runData = await response.json();
+    const runData: ApiResponse<RunData> = await response.json();
 
     if (!runData.data?.id) {
       throw new Error("No run ID returned from Apify");
@@ -55,22 +81,21 @@ export const runApifyExtraction = async (
     // Poll for completion
     let isComplete = false;
     let attempts = 0;
-    const maxAttempts = 30; // 5 minutes with 10-second intervals
     let lastStatus = "";
 
-    while (!isComplete && attempts < maxAttempts) {
+    while (!isComplete && attempts < MAX_ATTEMPTS) {
       console.log(
-        `Checking status (attempt ${attempts + 1}/${maxAttempts})...`
+        `Checking status (attempt ${attempts + 1}/${MAX_ATTEMPTS})...`
       );
-      await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 10 seconds
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL)); // Wait 10 seconds
 
       const statusResponse = await fetch(`${API_BASE}/run/${runId}`);
       if (!statusResponse.ok) {
-        const error = await statusResponse.json();
-        throw new Error(error.error || "Failed to check status");
+        const errorResponse: ApiResponse<null> = await statusResponse.json();
+        throw new Error(errorResponse.error?.message || "Failed to check status");
       }
 
-      const statusData = await statusResponse.json();
+      const statusData: ApiResponse<StatusData> = await statusResponse.json();
 
       const status = statusData.data?.status;
       lastStatus = status;
@@ -84,15 +109,13 @@ export const runApifyExtraction = async (
         console.log("Extraction completed successfully");
         isComplete = true;
 
-        // Dataset is now included in the status response
         if (!Array.isArray(statusData.data?.dataset)) {
           console.error("Invalid dataset format:", statusData.data?.dataset);
           throw new Error("Invalid dataset format received from server");
         }
 
-        // Transform the data to match our interface
-        const transformedData: ExtractedData[] = statusData.data.dataset.map(
-          (item) => ({
+        const transformedData: ApifyExtractedData[] =
+          statusData.data.dataset.map((item) => ({
             lead: item.lead || "",
             username: item.username || "",
             userLink: item.userLink || "",
@@ -103,8 +126,7 @@ export const runApifyExtraction = async (
               ? item.phones
               : [item.phones].filter(Boolean),
             summary: item.summary || undefined,
-          })
-        );
+          }));
 
         console.log(`Successfully extracted ${transformedData.length} records`);
         return transformedData;
@@ -114,7 +136,6 @@ export const runApifyExtraction = async (
         status === "CREATED"
       ) {
         console.log(`Extraction status: ${status}`);
-        // Continue polling
       } else {
         console.error("Unexpected status:", status);
         throw new Error(`Unexpected status: ${status}`);
@@ -126,7 +147,7 @@ export const runApifyExtraction = async (
     if (!isComplete) {
       console.error(
         "Extraction timed out after",
-        maxAttempts,
+        MAX_ATTEMPTS,
         "attempts. Last status:",
         lastStatus
       );
@@ -136,18 +157,21 @@ export const runApifyExtraction = async (
     throw new Error("Extraction failed to complete");
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Extraction error:", error.message);
-      // Check for specific error types
+      console.error("Extraction error:", error);
       if (error.message.includes("404")) {
         throw new Error(
           "API endpoint not found. Please check your configuration."
         );
       }
+      // Return a user-friendly error message
+      if (error.message.includes('Service temporarily unavailable')) {
+        throw error;
+      }
       throw error;
     } else {
       console.error("Unknown extraction error:", error);
       throw new Error(
-        "An unexpected error occurred during extraction. Please try again."
+        "The extraction service is currently unavailable. Please try again later."
       );
     }
   }
