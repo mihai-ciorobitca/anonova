@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
+import fetch from 'node-fetch';
 
 const app = express();
 
@@ -24,7 +25,7 @@ app.options('*', cors());
 app.use(express.json());
 
 // APIFY
-const APIFY_TOKEN = 'apify_api_T7QbfS4QT59lCgRsbtaYX1OwDx4mWo4n6oLU';
+const APIFY_TOKEN = 'apify_api_tfh1ugK6JvsOYcGsEfcDEaZUPWCDQE4C7B4I';
 const APIFY_API_BASE = 'https://api.apify.com/v2';
 
 // LINKEDIN
@@ -37,14 +38,12 @@ const ANONOVA_API_BASE = 'https://src-marketing101.com/api/orders';
 // TWITTER
 const TWITTER_ACTOR_ID = 'dqJrJj2vnv8K7XMNK'; // Twitter scraper actor ID
 
-// Proxy endpoint for Apify API
-app.post('/api/apify/run', async (req, res) => {
+// Proxy endpoint for LinkedIn Apify API
+app.post('/api/linkedin/apify/orders/create/', async (req, res) => {
     const platform = req.query.platform || 'linkedin';
     const actorId = platform === 'twitter' ? TWITTER_ACTOR_ID : LINKEDIN_ACTOR_ID;
 
     try {
-        console.log('Received request to start extraction:', req.body);
-
         const response = await fetch(`${APIFY_API_BASE}/acts/${actorId}/runs`, {
             method: 'POST',
             headers: {
@@ -54,74 +53,100 @@ app.post('/api/apify/run', async (req, res) => {
             body: JSON.stringify(req.body),
         });
 
-        const data = await response.json();
-        console.log('Apify response:', data);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create order');
+        }
 
+        const data = await response.json();
+        console.log(`This is the response from LinkedIn Apify: ${data}`);
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Proxy error:', error);
-        res.status(500).json({ error: 'Proxy request failed' });
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
     }
 });
 
 // Proxy endpoint for getting run status
-app.get('/api/apify/run/:runId', async (req, res) => {
+app.get('/api/linkedin/apify/orders/run/:runId', async (req, res) => {
     try {
-        console.log('Checking run status:', req.params.runId);
-
-        const platform = req.query.platform || 'linkedin';
-        const actorId = platform === 'twitter' ? TWITTER_ACTOR_ID : LINKEDIN_ACTOR_ID;
-
-        const runResponse = await fetch(`${APIFY_API_BASE}/acts/${actorId}/runs/${req.params.runId}`, {
+        console.log('Checking run status for run orders:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/actor-runs/${req.params.runId}`, {
+            method: 'GET',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${APIFY_TOKEN}`,
             },
         });
 
-        if (!runResponse.ok) {
-            throw new Error(`Failed to fetch run status: ${runResponse.status} ${runResponse.statusText}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
         }
 
-        const runData = await runResponse.json();
-        console.log('Status response:', runData);
-
-        // If run is successful, include the dataset ID in the response
-        if (runData.data?.status === 'SUCCEEDED' && runData.data?.defaultDatasetId) {
-            // Fetch dataset items
-            const datasetResponse = await fetch(
-                `${APIFY_API_BASE}/datasets/${runData.data.defaultDatasetId}/items?clean=true&format=json&limit=1000&view=overview`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${APIFY_TOKEN}`,
-                    },
-                }
-            );
-
-            if (!datasetResponse.ok) {
-                throw new Error(`Failed to fetch dataset: ${datasetResponse.status} ${datasetResponse.statusText}`);
-            }
-
-            const datasetData = await datasetResponse.json();
-
-            // Validate dataset is an array
-            if (!Array.isArray(datasetData)) {
-                throw new Error('Invalid dataset format: expected array');
-            }
-
-            // Return both run status and dataset data
-            res.status(200).json({
-                data: {
-                    ...runData.data,
-                    dataset: datasetData
-                }
-            });
-        } else {
-            // Return just the run status if not succeeded
-            res.status(200).json(runData);
-        }
+        const data = await response.json();
+        res.status(response.status).json(data);
     } catch (error) {
         console.error('Proxy error:', error);
         res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// Proxy endpoint for download csv
+app.get('/api/linkedin/apify/orders/download/:runId', async (req, res) => {
+    try {
+        console.log('Checking run status for download url:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/datasets/${req.params.runId}/items`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Transform the data to the expected output format
+        const transformedData = data.map(item => ({
+            lead: item.lead || 'developers',
+            username: item.username,
+            userLink: item.userLink,
+            emails: item.emails,
+            phones: item.phones || '-',
+            summary: item.summary
+        }));
+
+        // Convert JSON to CSV
+        const csvHeaders = ['lead', 'username', 'userLink', 'emails', 'phones', 'summary'];
+        const csvRows = transformedData.map(item => csvHeaders.map(header => `"${item[header] || ''}"`).join(','));
+        const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+        // Generate a random filename (UUID-like)
+        const blobName = crypto.randomUUID(); // Generates a unique ID
+        const filename = `${blobName}.csv`; // Example: "3f81d5c0-9b32-41ad-940b-b7612f71f013.csv"
+
+        // Define the public folder path
+        const PUBLIC_FOLDER = path.join(process.cwd(), 'downloads');
+
+        // Ensure the public folder exists
+        if (!fs.existsSync(PUBLIC_FOLDER)) {
+            fs.mkdirSync(PUBLIC_FOLDER);
+        }
+
+        // Write CSV text to a file
+        const filePath = path.join(PUBLIC_FOLDER, filename);
+        fs.writeFileSync(filePath, csvContent);
+
+        // Generate the download URL
+        const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
+        console.log(`✅ Order CSV saved as: ${downloadUrl}`);
+        return res.status(200).json({ downloadUrl });
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate CSV file' });
     }
 });
 
@@ -217,23 +242,26 @@ app.get('/download/:filename', (req, res) => {
     }
 });
 
-app.get('/api/orders/:order_id', async (req, res) => {
-    try {
-        const response = await fetch(`${ANONOVA_API_BASE}/${req.params.order_id}`, {
-            headers: {
-                'X-API-Key': ANONOVA_API_KEY,
-            },
-        });
+app.get('/api/orders/:order_id/:platform', async (req, res) => {
+    const platform = req.params.platform;
+    if (platform === 'instagram') {
+        try {
+            const response = await fetch(`${ANONOVA_API_BASE}/${req.params.order_id}`, {
+                headers: {
+                    'X-API-Key': ANONOVA_API_KEY,
+                },
+            });
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch order: ${response.status} ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch order: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            res.status(response.status).json(data);
+        } catch (error) {
+            console.error('Proxy error:', error);
+            res.status(500).json({ error: 'Proxy request failed' });
         }
-
-        const data = await response.json();
-        res.status(response.status).json(data);
-    } catch (error) {
-        console.error('Proxy error:', error);
-        res.status(500).json({ error: 'Proxy request failed' });
     }
 });
 

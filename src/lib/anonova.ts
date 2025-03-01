@@ -12,6 +12,7 @@ export interface AnonovaInput {
   action?: TaskAction;
   orderId?: string | number | null;
   page?: number;
+  platform?: string;
 }
 
 export const runAnonovaExtraction = async (
@@ -23,6 +24,7 @@ export const runAnonovaExtraction = async (
     maxLeads = null,
     action = null,
     orderId = null,
+    platform = null,
     page = 1,
   } = input;
 
@@ -35,7 +37,7 @@ export const runAnonovaExtraction = async (
       break;
     case "orderDetail":
       if (!orderId) throw new Error("Order ID is required for order details");
-      apiUrl = `/api/orders/${orderId}`;
+      apiUrl = `/api/orders/${orderId}/${platform}`;
       break;
     case "listOrders":
       apiUrl = `/api/orders/list/?page=${page}`;

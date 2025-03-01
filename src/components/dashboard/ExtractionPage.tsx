@@ -24,9 +24,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import LegalNotices from "../LegalNotices";
 import { useUser } from "../../contexts/UserContext";
 import { useTranslation } from "react-i18next";
-import { runApifyExtraction, type ApifyExtractedData } from "../../lib/apify";
+import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
+import { ApifyExtractedData } from "../../lib/apify.ts";
 
 type Platform = "instagram" | "linkedin" | "facebook" | "twitter";
 
@@ -90,7 +91,7 @@ interface ExtractionConfig {
 
 interface ExtractionResult {
   status: "completed" | "failed";
-  data: ApifyExtractedData[];
+  data: any;
   error?: string;
 }
 
@@ -167,13 +168,18 @@ const ExtractionPage = () => {
     try {
       let results;
 
+      // Use runAnonovaExtraction for Instagram
+      const taskType = "HT";
+
       if (extractionConfig.platform === "linkedin") {
         // Use runApifyExtraction for LinkedIn
-        results = await runApifyExtraction({
-          keyword: source,
+        results = await runLinkedInExtraction({
+          taskSource: source,
+          taskType: taskType,
           country: extractionConfig.country,
           language: extractionConfig.language,
           maxLeads: extractionConfig.maxLeadsPerInput,
+          action: "create",
         });
 
         setExtractionResult({
@@ -186,17 +192,18 @@ const ExtractionPage = () => {
           // Save linkedin order to Supabase order table
           const { error: ordersError } = await supabase.from("orders").insert({
             user_id: user.id,
-            source_type: null,
+            source_type: taskType,
             results_id: results.id,
-            status_display: results.status_display,
+            status_display: results.status,
             source: source,
             max_leads: extractionConfig.maxLeadsPerInput,
+            platform: extractionConfig.platform,
           });
 
           if (ordersError) throw ordersError;
 
           setExtractionResult({
-            status: results.status_display || "In the queue",
+            status: results.status || "In the queue",
             data: results,
             error: "none",
           });
@@ -220,15 +227,6 @@ const ExtractionPage = () => {
           }
         }
       } else if (extractionConfig.platform === "instagram") {
-        // Use runAnonovaExtraction for Instagram
-        const taskType = extractionConfig.isHashtagMode
-          ? "HT"
-          : extractionConfig.extractFollowers
-          ? "FL"
-          : extractionConfig.extractFollowing
-          ? "FO"
-          : "";
-
         results = await runAnonovaExtraction({
           taskSource: source,
           taskType,
@@ -693,118 +691,15 @@ const ExtractionPage = () => {
             <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
               <h3 className="text-xl font-bold text-[#0F0] mb-4">
                 Extraction Results
-                {extractionResult.status === "completed" && (
-                  <span className="text-sm font-normal text-gray-400 ml-2">
-                    ({extractionResult.data.length} records found)
-                  </span>
-                )}
               </h3>
 
               {extractionResult.status === "failed" ? (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-500">
                   {extractionResult.error}
                 </div>
-              ) : extractionResult.status === "In the queue" ? (
-                <div className="text-center py-8 text-gray-400">
-                  Successfully created order. Results are in orders.
-                </div>
-              ) : extractionResult.data.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#0F0]/20">
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                          Username
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                          Profile Link
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                          Email
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                          Phone
-                        </th>
-                        <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                          Summary
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#0F0]/10">
-                      {extractionResult.data.map((item, index) => (
-                        <tr
-                          key={index}
-                          className="hover:bg-[#0F0]/5 transition-colors"
-                        >
-                          <td className="px-6 py-4">{item.username || "-"}</td>
-                          <td className="px-6 py-4">
-                            <a
-                              href={item.userLink}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                window.open(
-                                  item.userLink,
-                                  "_blank",
-                                  "noopener,noreferrer"
-                                );
-                              }}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[#0F0] hover:underline"
-                            >
-                              {item.username ||
-                                item.userLink.split("/").pop() ||
-                                "View Profile"}
-                            </a>
-                          </td>
-                          <td className="px-6 py-4">
-                            {item.emails.length > 0 ? (
-                              <div className="space-y-1">
-                                {item.emails.map((email, i) => (
-                                  <a
-                                    key={i}
-                                    href={`mailto:${email}`}
-                                    className="text-[#0F0] hover:underline block"
-                                  >
-                                    {email}
-                                  </a>
-                                ))}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            {item.phones.length > 0 ? (
-                              <div className="space-y-1">
-                                {item.phones.map((phone, i) => (
-                                  <a
-                                    key={i}
-                                    href={`tel:${phone}`}
-                                    className="text-[#0F0] hover:underline block"
-                                  >
-                                    {phone}
-                                  </a>
-                                ))}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="px-6 py-4 max-w-xs">
-                            <div className="truncate" title={item.summary}>
-                              {item.summary || "-"}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               ) : (
                 <div className="text-center py-8 text-gray-400">
-                  No results found for your search criteria{" "}
-                  {extractionResult.status}
+                  Successfully created order. Results are in orders.
                 </div>
               )}
             </div>

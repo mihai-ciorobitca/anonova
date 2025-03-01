@@ -60,13 +60,17 @@ export const runApifyExtraction = async (
 
     if (!response.ok) {
       const errorResponse: ApiResponse<null> = await response.json();
-      
+
       // Handle specific Apify errors
-      if (errorResponse.error?.type === 'actor-is-not-rented') {
-        throw new Error('Service temporarily unavailable. Please try again later or contact support.');
+      if (errorResponse.error?.type === "actor-is-not-rented") {
+        throw new Error(
+          "Service temporarily unavailable. Please try again later or contact support."
+        );
       }
-      
-      throw new Error(errorResponse.error?.message || "Failed to start extraction");
+
+      throw new Error(
+        errorResponse.error?.message || "Failed to start extraction"
+      );
     }
 
     const runData: ApiResponse<RunData> = await response.json();
@@ -92,7 +96,9 @@ export const runApifyExtraction = async (
       const statusResponse = await fetch(`${API_BASE}/run/${runId}`);
       if (!statusResponse.ok) {
         const errorResponse: ApiResponse<null> = await statusResponse.json();
-        throw new Error(errorResponse.error?.message || "Failed to check status");
+        throw new Error(
+          errorResponse.error?.message || "Failed to check status"
+        );
       }
 
       const statusData: ApiResponse<StatusData> = await statusResponse.json();
@@ -164,7 +170,7 @@ export const runApifyExtraction = async (
         );
       }
       // Return a user-friendly error message
-      if (error.message.includes('Service temporarily unavailable')) {
+      if (error.message.includes("Service temporarily unavailable")) {
         throw error;
       }
       throw error;
@@ -176,5 +182,3 @@ export const runApifyExtraction = async (
     }
   }
 };
-
-

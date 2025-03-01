@@ -22,12 +22,14 @@ import { useUser } from "../../contexts/UserContext";
 import LegalNotices from "../LegalNotices";
 import { supabase } from "../../lib/supabase";
 import { runAnonovaExtraction } from "../../lib/anonova";
+import { runLinkedInExtraction } from "../../lib/linkedInApify";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectData,
   selectAction,
 } from "../../features/instagramData/instagramDataSlice";
 import { setAction } from "../../features/instagramData/instagramDataSlice";
+import { response } from "express";
 
 export interface Order {
   id: string;
@@ -61,26 +63,70 @@ const OrdersHistory = () => {
   useEffect(() => {
     const checkOrderStatus = async () => {
       orders.forEach(async (order) => {
-        try {
-          const response = await runAnonovaExtraction({
-            action: "orderDetail",
-            orderId: order.results_id,
-          });
+        if (order.platform === "instagram") {
+          try {
+            const response = await runAnonovaExtraction({
+              action: "orderDetail",
+              orderId: order.results_id,
+              platform: order.platform,
+            });
 
-          if (response.status_display) {
-            const { error } = await supabase
-              .from("orders")
-              .update({
-                status_display: response.status_display,
-              })
-              .eq("results_id", order.results_id);
+            if (response.status_display) {
+              const { error } = await supabase
+                .from("orders")
+                .update({
+                  status_display: response.status_display,
+                })
+                .eq("results_id", order.results_id);
 
-            if (error) {
-              console.error("Error updating order status:", error);
+              if (error) {
+                console.error("Error updating order status:", error);
+              }
             }
+          } catch (err) {
+            console.error("Error running Anonova extraction:", err);
           }
-        } catch (err) {
-          console.error("Error running Anonova extraction:", err);
+        } else if (order.platform === "linkedin") {
+          try {
+            const response = await runLinkedInExtraction({
+              action: "orderDetail",
+              orderId: order.results_id,
+            });
+
+            if (response.status) {
+              const { error } = await supabase
+                .from("orders")
+                .update({
+                  status_display: response.status,
+                })
+                .eq("results_id", order.results_id);
+
+              if (error) {
+                console.error("Error updating order status:", error);
+              }
+
+              if (response.status === "SUCCEEDED") {
+                const downloadUrlResponse = await runLinkedInExtraction({
+                  action: "download",
+                  orderId: response.defaultDatasetId,
+                });
+
+                if (downloadUrlResponse) {
+                  const { error } = await supabase
+                    .from("orders")
+                    .update({
+                      csv_url: downloadUrlResponse,
+                    })
+                    .eq("results_id", order.results_id);
+                  if (error) {
+                    console.error("Error updating order status:", error);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error running Anonova extraction:", err);
+          }
         }
       });
 
@@ -117,28 +163,30 @@ const OrdersHistory = () => {
     };
 
     // Check status every minute
-    const interval = setInterval(checkOrderStatus, 30000);
+    const interval = setInterval(checkOrderStatus, 20000);
     return () => clearInterval(interval);
-  });
+  }, [orders]);
 
   useEffect(() => {
     const updateOrders = () => {
       orders.forEach(async (order) => {
         try {
-          const actionData = await runAnonovaExtraction({
-            action: "download",
-            orderId: order.results_id,
-          });
+          if (order.status_display === "Completed") {
+            const actionData = await runAnonovaExtraction({
+              action: "download",
+              orderId: order.results_id,
+            });
 
-          if (actionData) {
-            const { error } = await supabase
-              .from("orders")
-              .update({
-                csv_url: actionData,
-              })
-              .eq("results_id", order.results_id);
-            if (error) {
-              console.error("Error updating order status:", error);
+            if (actionData) {
+              const { error } = await supabase
+                .from("orders")
+                .update({
+                  csv_url: actionData,
+                })
+                .eq("results_id", order.results_id);
+              if (error) {
+                console.error("Error updating order status:", error);
+              }
             }
           }
         } catch (err) {
@@ -148,7 +196,7 @@ const OrdersHistory = () => {
     };
 
     // Check status every minute
-    const interval = setInterval(updateOrders, 600000);
+    const interval = setInterval(updateOrders, 60000);
     return () => clearInterval(interval);
   }, [orders]);
 
@@ -199,13 +247,13 @@ const OrdersHistory = () => {
       return false;
     }
 
-    if (!searchQuery) return true;
+    if (!searchQuery.trim()) return true;
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
     return (
-      order.source.toLowerCase().includes(query) ||
-      order.source_type.toLowerCase().includes(query) ||
-      order.platform.toLowerCase().includes(query)
+      (order.source?.toLowerCase().includes(query) ?? false) ||
+      (order.source_type?.toLowerCase().includes(query) ?? false) ||
+      (order.platform?.toLowerCase().includes(query) ?? false)
     );
   });
 
@@ -336,22 +384,18 @@ const OrdersHistory = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Platform
                 </th>
-                {selectedPlatform !== "linkedin" && (
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                    Source Type
-                  </th>
-                )}
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
+                  Source Type
+                </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Status
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Order ID
                 </th>
-                {selectedPlatform !== "linkedin" && (
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
-                    Source
-                  </th>
-                )}
+                <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
+                  Source
+                </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#0F0]">
                   Max Leads
                 </th>
@@ -378,33 +422,31 @@ const OrdersHistory = () => {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {selectedPlatform === "instagram" && (
+                        {order.platform === "instagram" && (
                           <Instagram className="w-4 h-4 text-pink-500" />
                         )}
-                        {selectedPlatform === "linkedin" && (
+                        {order.platform === "linkedin" && (
                           <Linkedin className="w-4 h-4 text-blue-500" />
                         )}
-                        {selectedPlatform === "facebook" && (
+                        {order.platform === "facebook" && (
                           <Facebook className="w-4 h-4 text-blue-600" />
                         )}
-                        {selectedPlatform === "twitter" && (
+                        {order.platform === "twitter" && (
                           <Twitter className="w-4 h-4 text-gray-200" />
                         )}
-                        <span className="capitalize">{selectedPlatform}</span>
+                        <span className="capitalize">{order.platform}</span>
                       </div>
                     </td>
-                    {selectedPlatform !== "linkedin" && (
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        <div className="flex items-center gap-2">
-                          {order.source_type === "HT" ? (
-                            <Hash className="w-4 h-4" />
-                          ) : (
-                            <Users className="w-4 h-4" />
-                          )}
-                          {order.source_type}
-                        </div>
-                      </td>
-                    )}
+                    <td className="px-6 py-4 text-sm text-gray-300">
+                      <div className="flex items-center gap-2">
+                        {order.source_type === "HT" ? (
+                          <Hash className="w-4 h-4" />
+                        ) : (
+                          <Users className="w-4 h-4" />
+                        )}
+                        {order.source_type}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -421,11 +463,9 @@ const OrdersHistory = () => {
                     <td className="px-6 py-4 font-mono text-[#0F0]">
                       {order.results_id}
                     </td>
-                    {selectedPlatform !== "linkedin" && (
-                      <td className="px-6 py-4 text-sm text-gray-300">
-                        {order.source}
-                      </td>
-                    )}
+                    <td className="px-6 py-4 text-sm text-gray-300">
+                      {order.source}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-300">
                       {order.max_leads}
                     </td>
@@ -439,12 +479,13 @@ const OrdersHistory = () => {
                       {formatDate(order.updated_at)}
                     </td>
                     <td className="px-6 py-4">
-                      {order.status_display === "Completed" &&
+                      {(order.status_display === "Completed" ||
+                        order.status_display === "SUCCEEDED") &&
                         order.csv_url && (
                           <Button
                             variant="secondary"
                             className="w-full text-xs bg-[#0F0]/5 hover:bg-[#0F0]/10 border-[#0F0]/30 hover:border-[#0F0]/50 text-[#0F0] transition-all duration-300 flex items-center justify-center gap-1.5"
-                            onClick={() => downloadCsvFile(order.csv_url)}
+                            onClick={() => downloadCsvFile(order.csv_url!)}
                           >
                             <Download className="w-3 h-3" />
                             Download CSV
@@ -471,7 +512,7 @@ const OrdersHistory = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
+                  <td colSpan={10} className="px-6 py-12 text-center">
                     <Terminal className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                     <p className="text-gray-400">
                       No extractions found. Start your first extraction!
