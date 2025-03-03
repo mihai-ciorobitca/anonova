@@ -25,7 +25,7 @@ app.options('*', cors());
 app.use(express.json());
 
 // APIFY
-const APIFY_TOKEN = 'apify_api_tfh1ugK6JvsOYcGsEfcDEaZUPWCDQE4C7B4I';
+const APIFY_TOKEN = 'apify_api_Ld0KCy7mJtMt1nZbJsDuOjF2b8akAd1yd9ak';
 const APIFY_API_BASE = 'https://api.apify.com/v2';
 
 // LINKEDIN
@@ -36,7 +36,79 @@ const ANONOVA_API_KEY = 'db6667ea-e034-4edb-9ea3-fb0af39bdf3e';
 const ANONOVA_API_BASE = 'https://src-marketing101.com/api/orders';
 
 // TWITTER
-const TWITTER_ACTOR_ID = 'dqJrJj2vnv8K7XMNK'; // Twitter scraper actor ID
+const TWITTER_ACTOR_ID = 'Oliuhvq8My0EiVIT0'; // Temporary Twitter
+
+// Proxy endpoint for Twitter Apify API
+app.post('/api/twitter/apify/orders/create', async (req, res) => {
+    try {
+        console.log('Received Twitter extraction request:', req.body);
+
+        const response = await fetch(`${APIFY_API_BASE}/acts/${TWITTER_ACTOR_ID}/runs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+            body: JSON.stringify(req.body),
+        });
+
+        const data = await response.json();
+        console.log('Twitter Apify response:', data);
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create Twitter order');
+        }
+
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Twitter proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// Add Twitter-specific status check and download endpoints
+app.get('/api/twitter/apify/orders/run/:runId', async (req, res) => {
+    try {
+        console.log('Checking Twitter run status:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/actor-runs/${req.params.runId}`, {
+            headers: {
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        const runData = await response.json();
+    
+        if (runData.data?.status === 'SUCCEEDED' && runData.data?.defaultDatasetId) {
+            const datasetResponse = await fetch(
+                `${APIFY_API_BASE}/datasets/${runData.data.defaultDatasetId}/items?clean=true`,
+                { headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` }
+            });
+            const datasetData = await datasetResponse.json();
+            res.json({ data: { ...runData.data, dataset: datasetData } });
+        } else {
+            res.json(runData);
+        }
+    } catch (error) {
+        console.error('Twitter status check error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/twitter/apify/orders/download/:runId', async (req, res) => {
+    try {
+        const response = await fetch(
+            `${APIFY_API_BASE}/datasets/${req.params.runId}/items?format=json`,
+            { headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` }
+        });
+        
+        const data = await response.json();
+        // Add CSV conversion logic here similar to LinkedIn
+        res.json(data);
+    } catch (error) {
+        console.error('Twitter download error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Proxy endpoint for LinkedIn Apify API
 app.post('/api/linkedin/apify/orders/create/', async (req, res) => {

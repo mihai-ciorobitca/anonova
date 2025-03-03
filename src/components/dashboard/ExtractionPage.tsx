@@ -25,6 +25,7 @@ import LegalNotices from "../LegalNotices";
 import { useUser } from "../../contexts/UserContext";
 import { useTranslation } from "react-i18next";
 import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
+import { runTwitterExtraction } from "../../lib/twitterApify";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
 import { ApifyExtractedData } from "../../lib/apify.ts";
@@ -79,6 +80,7 @@ interface ExtractionConfig {
   isHashtagMode: boolean;
   profileUrl: string;
   hashtag: string;
+  domain?: string; // Added domain field
   state?: string;
   country: string;
   language: string;
@@ -112,6 +114,7 @@ const ExtractionPage = () => {
     isHashtagMode: false,
     profileUrl: "",
     hashtag: "",
+    domain: "", // Initialize domain
     state: "",
     country: "us",
     language: "en",
@@ -127,6 +130,12 @@ const ExtractionPage = () => {
     const source = extractionConfig.hashtag.trim();
     if (!source) {
       setError("Please enter a target (hashtag or profile)");
+      return;
+    }
+
+    // For X/Twitter, validate domain
+    if (extractionConfig.platform === "twitter" && !extractionConfig.domain) {
+      setError("Please enter a domain for X/Twitter extraction");
       return;
     }
 
@@ -171,7 +180,70 @@ const ExtractionPage = () => {
       // Use runAnonovaExtraction for Instagram
       const taskType = "HT";
 
-      if (extractionConfig.platform === "linkedin") {
+      if (extractionConfig.platform === "twitter") {
+        results = await runTwitterExtraction({
+          taskSource: source,
+          emailDomains: Array.isArray(extractionConfig.domain)
+            ? extractionConfig.domain
+            : extractionConfig.domain ? [extractionConfig.domain] : [],
+          maxLeads: extractionConfig.maxLeadsPerInput,
+          action: "create"
+        });
+
+        // Transform results to match table structure
+        const transformedResults = results.dataset.map((item: any) => ({
+          username: item.Email.split('@')[0],
+          userLink: item.Detail_Link,
+          emails: [item.Email],
+          summary: `${item.Title} (${item.Keyword})`,
+          domain: item.Domain
+        }));
+
+        setExtractionResult({
+          status: "completed",
+          data: transformedResults
+        });
+
+        try {
+          // Save twitter order to Supabase order table
+          const { error: ordersError } = await supabase.from("orders").insert({
+            user_id: user.id,
+            taskSource: source,
+            taskType: taskType,
+            results_id: results.id,
+            status_display: results.status,
+            source: source,
+            max_leads: extractionConfig.maxLeadsPerInput,
+            platform: extractionConfig.platform,
+          });
+
+          if (ordersError) throw ordersError;
+
+          setExtractionResult({
+            status: results.status || "In the queue",
+            data: results,
+            error: "none",
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          // Handle specific database errors
+          if (dbError.message?.includes("Minimum credits required")) {
+            throw new Error(
+              hasUsedFreeCredits
+                ? "Minimum 500 credits required for extraction."
+                : "Minimum 1 credit required for first extraction."
+            );
+          } else if (dbError.message?.includes("Insufficient credits")) {
+            throw new Error(
+              "Not enough credits available. Please purchase more credits to continue."
+            );
+          } else if (dbError.message?.includes("Source is required")) {
+            throw new Error("Please enter a valid target.");
+          } else {
+            throw new Error("Failed to save order. Please try again.");
+          }
+        }
+      } else if (extractionConfig.platform === "linkedin") {
         // Use runApifyExtraction for LinkedIn
         results = await runLinkedInExtraction({
           taskSource: source,
@@ -370,11 +442,10 @@ const ExtractionPage = () => {
                           platform: platform.id,
                         }))
                       }
-                      className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${
-                        extractionConfig.platform === platform.id
-                          ? "border-[#0F0] bg-[#0F0]/10"
-                          : "border-gray-700 hover:border-[#0F0]/50"
-                      }`}
+                      className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${extractionConfig.platform === platform.id
+                        ? "border-[#0F0] bg-[#0F0]/10"
+                        : "border-gray-700 hover:border-[#0F0]/50"
+                        }`}
                     >
                       <platform.icon className={`w-8 h-8 ${platform.color}`} />
                       <span className="text-sm font-medium">
@@ -406,76 +477,77 @@ const ExtractionPage = () => {
                   </ul>
                 </div>
                 {/* Collection Type - Hide for LinkedIn */}
-                {extractionConfig.platform !== "linkedin" && (
-                  <div className="mt-6">
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Collection Type
-                    </label>
-                    <div className="grid grid-cols-3 gap-4">
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: true,
-                            extractFollowers: false,
-                            extractFollowing: false,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          extractionConfig.isHashtagMode
+                {extractionConfig.platform !== "linkedin" &&
+                  extractionConfig.platform !== "twitter" && (
+                    <div className="mt-6">
+                      <label className="block text-sm text-gray-400 mb-2">
+                        Collection Type
+                      </label>
+                      <div className="grid grid-cols-3 gap-4">
+                        <button
+                          onClick={() =>
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              isHashtagMode: true,
+                              extractFollowers: false,
+                              extractFollowing: false,
+                            }))
+                          }
+                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${extractionConfig.isHashtagMode
                             ? "border-[#0F0] bg-[#0F0]/10"
                             : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Hash className="w-4 h-4" />
-                        <span>HT</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: false,
-                            extractFollowers: true,
-                            extractFollowing: false,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          !extractionConfig.isHashtagMode &&
-                          extractionConfig.extractFollowers
+                            }`}
+                        >
+                          <Hash className="w-4 h-4" />
+                          <span>HT</span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              isHashtagMode: false,
+                              extractFollowers: true,
+                              extractFollowing: false,
+                            }))
+                          }
+                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${!extractionConfig.isHashtagMode &&
+                            extractionConfig.extractFollowers
                             ? "border-[#0F0] bg-[#0F0]/10"
                             : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>FL</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: false,
-                            extractFollowers: false,
-                            extractFollowing: true,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          !extractionConfig.isHashtagMode &&
-                          extractionConfig.extractFollowing
+                            }`}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>FL</span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              isHashtagMode: false,
+                              extractFollowers: false,
+                              extractFollowing: true,
+                            }))
+                          }
+                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${!extractionConfig.isHashtagMode &&
+                            extractionConfig.extractFollowing
                             ? "border-[#0F0] bg-[#0F0]/10"
                             : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>FO</span>
-                      </button>
+                            }`}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>FO</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
+              {/* Target Input */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Target
+                  {extractionConfig.platform === "twitter"
+                    ? "Target (Keyword for Email and Name)"
+                    : "Target"}
                 </label>
                 <input
                   type="text"
@@ -487,13 +559,39 @@ const ExtractionPage = () => {
                     }))
                   }
                   className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                  placeholder="Enter a Hashtag"
+                  placeholder={
+                    extractionConfig.platform === "twitter"
+                      ? "Enter a Keyword"
+                      : "Enter a Hashtag"
+                  }
                 />
               </div>
 
+              {/* Domain Input - Only for X/Twitter */}
+              {extractionConfig.platform === "twitter" && (
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Domain</label>
+                  <input
+                    type="text"
+                    value={extractionConfig.domain}
+                    onChange={(e) =>
+                      setExtractionConfig((prev) => ({
+                        ...prev,
+                        domain: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                    placeholder="@google.com"
+                  />
+                </div>
+              )}
+
+              {/* Max Leads Input */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Max Leads per Input
+                  {extractionConfig.platform === "twitter"
+                    ? "Maximum Results"
+                    : "Max Leads per Input"}
                 </label>
                 <div className="relative">
                   <input
@@ -502,11 +600,11 @@ const ExtractionPage = () => {
                     onChange={(e) =>
                       setExtractionConfig((prev) => ({
                         ...prev,
-                        maxLeadsPerInput: parseInt(e.target.value) || 10,
+                        maxLeadsPerInput: Math.max(10, parseInt(e.target.value) || 10),
                       }))
                     }
-                    min={10}
-                    max={extractionConfig.maxResults}
+                    min="10"
+                    max="1000"
                     className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
                     placeholder="10"
                   />
