@@ -10,7 +10,7 @@ Anonova is a powerful web application for extracting and analyzing data from var
 - **Multi-Platform Support**
   - Instagram (Followers, Following, Hashtags)
   - LinkedIn (Professional Profiles)
-  - Twitter/X (Followers, Engagement)
+  - Twitter/X (Emails, Engagement)
   - Facebook (Profiles, Groups)
 
 ### Advanced Security
