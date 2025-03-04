@@ -10,8 +10,6 @@ export interface TwitterInput {
   taskType?: string;
   emailDomains?: string[];
   action?: TaskAction;
-  language?: string;
-  country?: string;
   maxLeads?: number;
   platform?: string;
   orderId?: string | number | null;
@@ -25,13 +23,11 @@ export const runTwitterExtraction = async (
 ): Promise<any> => {
   const {
     taskSource = "",
-    taskType = "email",
+    taskType = null,
     emailDomains = [],
-    maxLeads = 10,
+    maxLeads = null,
     action = "create",
     orderId = null,
-    language = "en",
-    country = "us",
     platform = "twitter",
   } = input;
 
@@ -58,8 +54,6 @@ export const runTwitterExtraction = async (
         taskSource || ""
       )}&taskType=${encodeURIComponent(
         taskType || ""
-      )}&language=${encodeURIComponent(language)}&country=${encodeURIComponent(
-        country
       )}&maxLeads=${encodeURIComponent(
         String(maxLeads)
       )}&platform=${encodeURIComponent(platform)}`;
@@ -89,7 +83,7 @@ export const runTwitterExtraction = async (
       method: action === "create" ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer apify_api_tfh1ugK6JvsOYcGsEfcDEaZUPWCDQE4C7B4I",
+        "Authorization": "Bearer apify_api_Ld0KCy7mJtMt1nZbJsDuOjF2b8akAd1yd9ak",
       },
       body: action === "create" ? JSON.stringify({
         keyword: taskSource,
@@ -108,7 +102,14 @@ export const runTwitterExtraction = async (
       );
     }
 
-    const data = await response.json();
+    const responseText = await response.text(); // Read raw response
+    console.log("Twitter API Response:", responseText); // Log full response
+
+    if (!response.ok) {
+      throw new Error(`API Request Failed: ${response.status} ${response.statusText} - ${responseText}`);
+    }
+
+    const data = JSON.parse(responseText);
 
     if (action !== "download") {
       const resultData = data.data;

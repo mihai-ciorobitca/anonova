@@ -190,26 +190,17 @@ const ExtractionPage = () => {
           action: "create"
         });
 
-        // Transform results to match table structure
-        const transformedResults = results.dataset.map((item: any) => ({
-          username: item.Email.split('@')[0],
-          userLink: item.Detail_Link,
-          emails: [item.Email],
-          summary: `${item.Title} (${item.Keyword})`,
-          domain: item.Domain
-        }));
-
         setExtractionResult({
           status: "completed",
-          data: transformedResults
+          data: results,
+          error: "none",
         });
 
         try {
           // Save twitter order to Supabase order table
           const { error: ordersError } = await supabase.from("orders").insert({
             user_id: user.id,
-            taskSource: source,
-            taskType: taskType,
+            source_type: taskType,
             results_id: results.id,
             status_display: results.status,
             source: source,
@@ -797,7 +788,7 @@ const ExtractionPage = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400">
-                  Successfully created order. Results are in orders.
+                  Successfully created {extractionConfig.platform} order. Results are in orders.
                 </div>
               )}
             </div>

@@ -36,7 +36,7 @@ const ANONOVA_API_KEY = 'db6667ea-e034-4edb-9ea3-fb0af39bdf3e';
 const ANONOVA_API_BASE = 'https://src-marketing101.com/api/orders';
 
 // TWITTER
-const TWITTER_ACTOR_ID = 'Oliuhvq8My0EiVIT0'; // Temporary Twitter
+const TWITTER_ACTOR_ID = 'LWWFeND7iepOvdpwd'; // Temporary Twitter
 
 // Proxy endpoint for Twitter Apify API
 app.post('/api/twitter/apify/orders/create', async (req, res) => {
@@ -52,13 +52,12 @@ app.post('/api/twitter/apify/orders/create', async (req, res) => {
             body: JSON.stringify(req.body),
         });
 
-        const data = await response.json();
-        console.log('Twitter Apify response:', data);
-
         if (!response.ok) {
             throw new Error(data.error || 'Failed to create Twitter order');
         }
 
+        const data = await response.json();
+        console.log('Twitter Apify response:', data);
         res.status(response.status).json(data);
     } catch (error) {
         console.error('Twitter proxy error:', error);
@@ -66,47 +65,86 @@ app.post('/api/twitter/apify/orders/create', async (req, res) => {
     }
 });
 
-// Add Twitter-specific status check and download endpoints
+// proxy endpoint for getting run status twitter
 app.get('/api/twitter/apify/orders/run/:runId', async (req, res) => {
     try {
         console.log('Checking Twitter run status:', req.params.runId);
         const response = await fetch(`${APIFY_API_BASE}/actor-runs/${req.params.runId}`, {
+            method: 'GET',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${APIFY_TOKEN}`,
             },
         });
 
-        const runData = await response.json();
-    
-        if (runData.data?.status === 'SUCCEEDED' && runData.data?.defaultDatasetId) {
-            const datasetResponse = await fetch(
-                `${APIFY_API_BASE}/datasets/${runData.data.defaultDatasetId}/items?clean=true`,
-                { headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` }
-            });
-            const datasetData = await datasetResponse.json();
-            res.json({ data: { ...runData.data, dataset: datasetData } });
-        } else {
-            res.json(runData);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
         }
+
+        const data = await response.json();
+        res.status(response.status).json(data);
     } catch (error) {
-        console.error('Twitter status check error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
     }
 });
 
+// Proxy endpoint for download twitter csv
 app.get('/api/twitter/apify/orders/download/:runId', async (req, res) => {
     try {
-        const response = await fetch(
-            `${APIFY_API_BASE}/datasets/${req.params.runId}/items?format=json`,
-            { headers: { 'Authorization': `Bearer ${APIFY_TOKEN}` }
+        console.log('Checking run status for download URL:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/datasets/${req.params.runId}/items`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
         });
-        
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
         const data = await response.json();
-        // Add CSV conversion logic here similar to LinkedIn
-        res.json(data);
+
+        // Transform the data to the expected output format
+        const transformedData = data.map(item => ({
+            keywords: item.keywords || '-',
+            emailDomains: item.emailDomains || '-',
+            email: item.email || '-',
+            title: item.title || '-',
+            url: item.url || '-',
+            text: item.text || '-'
+        }));
+
+        // Convert JSON to CSV
+        const csvHeaders = ['keywords', 'emailDomains', 'email', 'title', 'url', 'text'];
+        const csvRows = transformedData.map(item => csvHeaders.map(header => `"${item[header] || ''}"`).join(','));
+        const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+        // Generate a random filename
+        const blobName = crypto.randomUUID(); // Generates a unique ID
+        const filename = `${blobName}.csv`; 
+
+        // Define the public folder path
+        const PUBLIC_FOLDER = path.join(process.cwd(), 'downloads');
+
+        // Ensure the public folder exists
+        if (!fs.existsSync(PUBLIC_FOLDER)) {
+            fs.mkdirSync(PUBLIC_FOLDER);
+        }
+
+        // Write CSV text to a file
+        const filePath = path.join(PUBLIC_FOLDER, filename);
+        fs.writeFileSync(filePath, csvContent);
+
+        // Generate the download URL
+        const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
+        console.log(`✅ Twitter data CSV saved as: ${downloadUrl}`);
+        return res.status(200).json({ downloadUrl });
     } catch (error) {
-        console.error('Twitter download error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate CSV file' });
     }
 });
 
