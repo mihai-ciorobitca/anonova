@@ -28,15 +28,15 @@ app.use(express.json());
 const APIFY_TOKEN = 'apify_api_Ld0KCy7mJtMt1nZbJsDuOjF2b8akAd1yd9ak';
 const APIFY_API_BASE = 'https://api.apify.com/v2';
 
-// LINKEDIN
-const LINKEDIN_ACTOR_ID = 'Oliuhvq8My0EiVIT0';
-
 // ANONOVA
 const ANONOVA_API_KEY = 'db6667ea-e034-4edb-9ea3-fb0af39bdf3e';
 const ANONOVA_API_BASE = 'https://src-marketing101.com/api/orders';
 
+// LINKEDIN
+const LINKEDIN_ACTOR_ID = 'Oliuhvq8My0EiVIT0';
+
 // TWITTER
-const TWITTER_ACTOR_ID = 'LWWFeND7iepOvdpwd'; // Temporary Twitter
+const TWITTER_ACTOR_ID = 'LWWFeND7iepOvdpwd'; 
 
 // Proxy endpoint for Twitter Apify API
 app.post('/api/twitter/apify/orders/create', async (req, res) => {
@@ -201,7 +201,7 @@ app.get('/api/linkedin/apify/orders/run/:runId', async (req, res) => {
     }
 });
 
-// Proxy endpoint for download csv
+// Proxy endpoint for download linkedin csv
 app.get('/api/linkedin/apify/orders/download/:runId', async (req, res) => {
     try {
         console.log('Checking run status for download url:', req.params.runId);
@@ -252,7 +252,7 @@ app.get('/api/linkedin/apify/orders/download/:runId', async (req, res) => {
 
         // Generate the download URL
         const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
-        console.log(`✅ Order CSV saved as: ${downloadUrl}`);
+        console.log(`✅ LinkedIn data CSV saved as: ${downloadUrl}`);
         return res.status(200).json({ downloadUrl });
     } catch (error) {
         console.error('Proxy error:', error);
@@ -330,7 +330,7 @@ app.get('/api/orders/:order_id/download', async (req, res) => {
         const filePath = path.join(PUBLIC_FOLDER, filename);
         fs.writeFileSync(filePath, csvText);
 
-        console.log(`✅ Order CSV saved as: ${filename}`);
+        console.log(`✅ Instagram data CSV saved as: ${filename}`);
 
         // Generate the download URL
         const downloadUrl = `http://localhost:${PORT}/download/${filename}`;

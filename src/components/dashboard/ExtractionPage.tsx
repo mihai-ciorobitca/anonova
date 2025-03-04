@@ -80,7 +80,7 @@ interface ExtractionConfig {
   isHashtagMode: boolean;
   profileUrl: string;
   hashtag: string;
-  domain?: string; // Added domain field
+  domain?: string[]; // Added domain field
   state?: string;
   country: string;
   language: string;
@@ -114,7 +114,7 @@ const ExtractionPage = () => {
     isHashtagMode: false,
     profileUrl: "",
     hashtag: "",
-    domain: "", // Initialize domain
+    domain: [], // Initialize domain
     state: "",
     country: "us",
     language: "en",
@@ -561,19 +561,59 @@ const ExtractionPage = () => {
               {/* Domain Input - Only for X/Twitter */}
               {extractionConfig.platform === "twitter" && (
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Domain</label>
-                  <input
-                    type="text"
-                    value={extractionConfig.domain}
-                    onChange={(e) =>
-                      setExtractionConfig((prev) => ({
-                        ...prev,
-                        domain: e.target.value,
-                      }))
-                    }
-                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    placeholder="@google.com"
-                  />
+                  <label className="block text-sm text-gray-400 mb-2">Domains</label>
+
+                  {/* Ensure at least one input box is always shown */}
+                  {(extractionConfig.domain?.length ? extractionConfig.domain : [""]).map((d, index) => (
+                    <div key={index} className="flex items-center space-x-2 mb-2">
+                      <input
+                        type="text"
+                        value={d}
+                        onChange={(e) => {
+                          const newDomains = [...(extractionConfig.domain || [])]; // Ensure it's an array
+                          newDomains[index] = e.target.value;
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            domain: newDomains,
+                          }));
+                        }}
+                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                        placeholder="Enter domain (e.g., google.com)"
+                      />
+
+                      {/* Add Button (Only on first input) */}
+                      {index === 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              domain: [...(prev.domain || []), ""], // Add a new empty input field
+                            }))
+                          }
+                          className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
+                        >
+                          +
+                        </button>
+                      )}
+
+                      {/* Remove Button (Only if more than one input field exists) */}
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              domain: prev.domain?.filter((_, i) => i !== index) || [],
+                            }))
+                          }
+                          className="bg-red-500 px-3 py-2 text-white rounded-lg"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -591,7 +631,7 @@ const ExtractionPage = () => {
                     onChange={(e) =>
                       setExtractionConfig((prev) => ({
                         ...prev,
-                        maxLeadsPerInput: Math.max(10, parseInt(e.target.value) || 10),
+                        maxLeadsPerInput: Math.max(0, parseInt(e.target.value)),
                       }))
                     }
                     min="10"

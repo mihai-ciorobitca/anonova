@@ -99,7 +99,7 @@ export const runTwitterExtraction = async (
     }
 
     const responseText = await response.text(); // Read raw response
-    console.log("Twitter API Response:", responseText); // Log full response
+    // console.log("Twitter API Response:", responseText); // Log full response
 
     if (!response.ok) {
       throw new Error(`API Request Failed: ${response.status} ${response.statusText} - ${responseText}`);

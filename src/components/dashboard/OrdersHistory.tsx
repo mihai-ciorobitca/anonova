@@ -23,6 +23,7 @@ import LegalNotices from "../LegalNotices";
 import { supabase } from "../../lib/supabase";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { runLinkedInExtraction } from "../../lib/linkedInApify";
+import { runTwitterExtraction } from "../../lib/twitterApify";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectData,
@@ -85,6 +86,47 @@ const OrdersHistory = () => {
             }
           } catch (err) {
             console.error("Error running Anonova extraction:", err);
+          }
+        } else if (order.platform === "twitter") {
+          try {
+            const response = await runTwitterExtraction({
+              action: "orderDetail",
+              orderId: order.results_id,
+            });
+
+            if (response.status) {
+              const { error } = await supabase
+                .from("orders")
+                .update({
+                  status_display: response.status,
+                })
+                .eq("results_id", order.results_id);
+
+              if (error) {
+                console.error("Error updating twitter order status:", error);
+              }
+
+              if (response.status === "SUCCEEDED") {
+                const downloadUrlResponse = await runTwitterExtraction({
+                  action: "download",
+                  orderId: response.defaultDatasetId,
+                });
+
+                if (downloadUrlResponse) {
+                  const { error } = await supabase
+                    .from("orders")
+                    .update({
+                      csv_url: downloadUrlResponse,
+                    })
+                    .eq("results_id", order.results_id);
+                  if (error) {
+                    console.error("Error updating twitter order status:", error);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error running Twitter extraction:", err);
           }
         } else if (order.platform === "linkedin") {
           try {
