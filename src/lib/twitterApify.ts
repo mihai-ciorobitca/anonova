@@ -23,7 +23,7 @@ export const runTwitterExtraction = async (
 ): Promise<any> => {
   const {
     taskSource = "",
-    taskType = null,
+    taskType = "",
     emailDomains = [],
     maxLeads = null,
     action = "create",
@@ -65,10 +65,6 @@ export const runTwitterExtraction = async (
       // Validate input
       if (!taskSource) {
         throw new Error("Source is required");
-      }
-
-      if (!taskType) {
-        throw new Error("Source type is required");
       }
 
       if (!maxLeads || maxLeads < 10) {
@@ -135,9 +131,7 @@ export const runTwitterExtraction = async (
         );
       } else if (error.message.includes("Source is required")) {
         throw new Error("Please enter a valid target.");
-      } else if (error.message.includes("Source type is required")) {
-        throw new Error("Please select a collection type (HT, FL, or FO).");
-      }
+      } 
 
       throw error;
     } else {
