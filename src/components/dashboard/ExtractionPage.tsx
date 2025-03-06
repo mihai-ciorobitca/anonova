@@ -64,8 +64,14 @@ const platforms = [
     name: "Facebook",
     icon: Facebook,
     color: "text-blue-600",
-    description: "Extract Facebook profiles and groups",
-    features: ["Profile friends", "Group members", "Page followers"],
+    description: "Extract Facebook posts and contact details",
+    features: [
+      "Keyword-based post extraction",
+      "Extract emails from posts",
+      "Post titles & descriptions",
+      "Direct post links",
+      "Post text & hashtags"
+    ],
   },
   {
     id: "twitter" as Platform,
@@ -640,7 +646,7 @@ const ExtractionPage = () => {
                           }));
                         }}
                         className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                        placeholder="Enter domain (e.g., google.com)"
+                        placeholder="Enter domain (e.g., gmail.com)"
                       />
 
                       {/* Add Button (Only on first input) */}
