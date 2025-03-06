@@ -79,7 +79,7 @@ export const runTwitterExtraction = async (
       method: action === "create" ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer apify_api_Ld0KCy7mJtMt1nZbJsDuOjF2b8akAd1yd9ak",
+        "Authorization": "Bearer apify_api_QsgUhYJBU3FwqAl9s61dkErajah9Hr3NkCxz",
       },
       body: action === "create" ? JSON.stringify({
         keyword: taskSource,

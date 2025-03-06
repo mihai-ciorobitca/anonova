@@ -24,6 +24,7 @@ import { supabase } from "../../lib/supabase";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { runLinkedInExtraction } from "../../lib/linkedInApify";
 import { runTwitterExtraction } from "../../lib/twitterApify";
+import { runFacebookExtraction } from "../../lib/facebookApify";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectData,
@@ -31,6 +32,7 @@ import {
 } from "../../features/instagramData/instagramDataSlice";
 import { setAction } from "../../features/instagramData/instagramDataSlice";
 import { response } from "express";
+
 
 export interface Order {
   id: string;
@@ -86,6 +88,47 @@ const OrdersHistory = () => {
             }
           } catch (err) {
             console.error("Error running Anonova extraction:", err);
+          }
+        } else if (order.platform === "facebook") {
+          try {
+            const response = await runFacebookExtraction({
+              action: "orderDetail",
+              orderId: order.results_id,
+            });
+
+            if (response.status) {
+              const { error } = await supabase
+                .from("orders")
+                .update({
+                  status_display: response.status,
+                })
+                .eq("results_id", order.results_id);
+
+              if (error) {
+                console.error("Error updating facebook order status:", error);
+              }
+
+              if (response.status === "SUCCEEDED") {
+                const downloadUrlResponse = await runFacebookExtraction({
+                  action: "download",
+                  orderId: response.defaultDatasetId,
+                });
+
+                if (downloadUrlResponse) {
+                  const { error } = await supabase
+                    .from("orders")
+                    .update({
+                      csv_url: downloadUrlResponse,
+                    })
+                    .eq("results_id", order.results_id);
+                  if (error) {
+                    console.error("Error updating facebook order status:", error);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Error running Facebook extraction:", err);
           }
         } else if (order.platform === "twitter") {
           try {

@@ -26,6 +26,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useTranslation } from "react-i18next";
 import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
 import { runTwitterExtraction } from "../../lib/twitterApify";
+import { runFacebookExtraction } from "../../lib/facebookApify.ts";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
 import { ApifyExtractedData } from "../../lib/apify.ts";
@@ -71,9 +72,15 @@ const platforms = [
     name: "X/Twitter",
     icon: Twitter,
     color: "text-gray-200",
-    description: "Extract Twitter followers and engagement",
-    features: ["Profile followers", "Tweet engagement", "Hashtag analysis"],
-  },
+    description: "Extract emails and related content from Twitter",
+    features: [
+      "Keyword-based email extraction",
+      "Email domain filtering",
+      "Extracted email addresses",
+      "Associated titles and usernames",
+      "Tweet content and URLs",
+    ],
+  },  
 ];
 
 interface ExtractionConfig {
@@ -180,7 +187,61 @@ const ExtractionPage = () => {
       // Use runAnonovaExtraction for Instagram
       const taskType = "HT";
 
-      if (extractionConfig.platform === "twitter") {
+      if (extractionConfig.platform === "facebook") {
+        results = await runFacebookExtraction({
+          taskSource: source,
+          emailDomains: Array.isArray(extractionConfig.domain)
+            ? extractionConfig.domain
+            : extractionConfig.domain ? [extractionConfig.domain] : [],
+          maxLeads: extractionConfig.maxLeadsPerInput,
+          action: "create"
+        });
+
+        setExtractionResult({
+          status: "completed",
+          data: results,
+          error: "none",
+        });
+
+        try {
+          // Save twitter order to Supabase order table
+          const { error: ordersError } = await supabase.from("orders").insert({
+            user_id: user.id,
+            source_type: taskType,
+            results_id: results.id,
+            status_display: results.status,
+            source: source,
+            max_leads: extractionConfig.maxLeadsPerInput,
+            platform: extractionConfig.platform,
+          });
+
+          if (ordersError) throw ordersError;
+
+          setExtractionResult({
+            status: results.status || "In the queue",
+            data: results,
+            error: "none",
+          });
+        } catch (dbError) {
+          console.error("Database error:", dbError);
+          // Handle specific database errors
+          if (dbError.message?.includes("Minimum credits required")) {
+            throw new Error(
+              hasUsedFreeCredits
+                ? "Minimum 500 credits required for extraction."
+                : "Minimum 1 credit required for first extraction."
+            );
+          } else if (dbError.message?.includes("Insufficient credits")) {
+            throw new Error(
+              "Not enough credits available. Please purchase more credits to continue."
+            );
+          } else if (dbError.message?.includes("Source is required")) {
+            throw new Error("Please enter a valid target.");
+          } else {
+            throw new Error("Failed to save order. Please try again.");
+          }
+        }
+      } else if (extractionConfig.platform === "twitter") {
         results = await runTwitterExtraction({
           taskSource: source,
           emailDomains: Array.isArray(extractionConfig.domain)
@@ -469,7 +530,8 @@ const ExtractionPage = () => {
                 </div>
                 {/* Collection Type - Hide for LinkedIn */}
                 {extractionConfig.platform !== "linkedin" &&
-                  extractionConfig.platform !== "twitter" && (
+                  extractionConfig.platform !== "twitter" &&
+                  extractionConfig.platform !== "facebook" && (
                     <div className="mt-6">
                       <label className="block text-sm text-gray-400 mb-2">
                         Collection Type
@@ -538,7 +600,7 @@ const ExtractionPage = () => {
                 <label className="block text-sm text-gray-400 mb-2">
                   {extractionConfig.platform === "twitter"
                     ? "Target (Keyword for Email and Name)"
-                    : "Target"}
+                    : "Target (Keyword for Email and Title)"}
                 </label>
                 <input
                   type="text"
@@ -558,8 +620,8 @@ const ExtractionPage = () => {
                 />
               </div>
 
-              {/* Domain Input - Only for X/Twitter */}
-              {extractionConfig.platform === "twitter" && (
+              {/* Domain Input - Only for Twitter & Facebook */}
+              {["twitter", "facebook"].includes(extractionConfig.platform) && (
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Domains</label>
 
@@ -617,36 +679,38 @@ const ExtractionPage = () => {
                 </div>
               )}
 
-              {/* Max Leads Input */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  {extractionConfig.platform === "twitter"
-                    ? "Maximum Results"
-                    : "Max Leads per Input"}
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={extractionConfig.maxLeadsPerInput}
-                    onChange={(e) =>
-                      setExtractionConfig((prev) => ({
-                        ...prev,
-                        maxLeadsPerInput: Math.max(0, parseInt(e.target.value)),
-                      }))
-                    }
-                    min="10"
-                    max="1000"
-                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    placeholder="10"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    leads
+              {/* Max Leads Input - Works for Twitter & Facebook */}
+              {["instagram", "linkedin", "twitter", "facebook"].includes(extractionConfig.platform) && (
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">
+                    {extractionConfig.platform === "twitter"
+                      ? "Maximum Results"
+                      : "Max Leads per Input"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={extractionConfig.maxLeadsPerInput || ""}
+                      onChange={(e) =>
+                        setExtractionConfig((prev) => ({
+                          ...prev,
+                          maxLeadsPerInput: Math.max(10, parseInt(e.target.value) || 10), // Ensure minimum of 10
+                        }))
+                      }
+                      min="10"
+                      max="1000"
+                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                      placeholder="10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                      leads
+                    </div>
                   </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Minimum 10 leads required per extraction
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
-                  Minimum 10 leads required per extraction
-                </p>
-              </div>
+              )}
 
               {/* LinkedIn-specific fields */}
               {extractionConfig.platform === "linkedin" && (
