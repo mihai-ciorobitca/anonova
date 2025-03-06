@@ -86,7 +86,7 @@ const platforms = [
       "Associated titles and usernames",
       "Tweet content and URLs",
     ],
-  },  
+  },
 ];
 
 interface ExtractionConfig {
@@ -101,6 +101,10 @@ interface ExtractionConfig {
   maxLeadsPerInput: number;
   extractFollowers: boolean;
   extractFollowing: boolean;
+  minDelay: number;
+  maxDelay: number;
+  facebookScrapeType: string,
+  facebookScrapeValue: string,
   platform: Platform;
 }
 
@@ -135,8 +139,14 @@ const ExtractionPage = () => {
     maxLeadsPerInput: 10,
     extractFollowers: true,
     extractFollowing: false,
+    minDelay: 1,
+    maxDelay: 5,
+    facebookScrapeType: "",
+    facebookScrapeValue: "",
     platform: "instagram",
   });
+
+  const [selectedExtractionType, setSelectedExtractionType] = useState("");
 
   const handleStartExtraction = async () => {
     // Validate source/target
@@ -534,6 +544,202 @@ const ExtractionPage = () => {
                       ))}
                   </ul>
                 </div>
+
+                {/* Facebook-specific Scrape Type */}
+                {extractionConfig.platform === "facebook" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">
+                        Scrape Operation
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          onClick={() =>
+                            setExtractionConfig(prev => ({
+                              ...prev,
+                              facebookScrapeType: "",
+                              facebookScrapeValue: ""
+                            }))
+                          }
+                          className={`p-3 rounded-lg border transition-all ${!extractionConfig.facebookScrapeType
+                            ? "border-[#0F0] bg-[#0F0]/10"
+                            : "border-gray-700 hover:border-[#0F0]/50"
+                            }`}
+                        >
+                          Basic Parameters
+                        </button>
+
+                        <select
+                          value={extractionConfig.facebookScrapeType || ""}
+                          onChange={(e) =>
+                            setExtractionConfig(prev => ({
+                              ...prev,
+                              facebookScrapeType: e.target.value || "",
+                              facebookScrapeValue: ""
+                            }))
+                          }
+                          className="bg-black/50 border border-[#0F0]/30 rounded-lg p-3 text-white focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                        >
+                          <option value="">Select Scrape Type...</option>
+                          <option value="scrapeProfiles">Scrape Profiles</option>
+                          <option value="scrapePeopleSearch">Scrape People Search Results</option>
+                          <option value="scrapeGroupMembers">Scrape Group Members</option>
+                          <option value="scrapePosts">Scrape Posts</option>
+                          <option value="scrapeComments">Scrape Comments</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Scrape Type Input Fields */}
+                    {extractionConfig.facebookScrapeType && (
+                      <div className="space-y-4">
+                        <p className="text-gray-400">
+                          This section is applicable only when action is <span className="text-[#0F0] font-bold">{extractionConfig.facebookScrapeType.replace(/scrape/, "Scrape ")}</span>
+                        </p>
+
+                        {extractionConfig.facebookScrapeType === "scrapeProfiles" && (
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Facebook Profile URLs (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={extractionConfig.facebookScrapeValue}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  facebookScrapeValue: e.target.value
+                                }))
+                              }
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                              placeholder="Enter profile URLs (comma-separated)"
+                            />
+                          </div>
+                        )}
+
+                        {extractionConfig.facebookScrapeType === "scrapePeopleSearch" && (
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              People Search Results Page URL (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={extractionConfig.facebookScrapeValue}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  facebookScrapeValue: e.target.value
+                                }))
+                              }
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                              placeholder="Enter search URL"
+                            />
+                          </div>
+                        )}
+
+                        {extractionConfig.facebookScrapeType === "scrapeGroupMembers" && (
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Group URL (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={extractionConfig.facebookScrapeValue}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  facebookScrapeValue: e.target.value
+                                }))
+                              }
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                              placeholder="Enter group URL"
+                            />
+                          </div>
+                        )}
+
+                        {extractionConfig.facebookScrapeType === "scrapePosts" && (
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Link to Group (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={extractionConfig.facebookScrapeValue}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  facebookScrapeValue: e.target.value
+                                }))
+                              }
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                              placeholder="Enter group link"
+                            />
+                          </div>
+                        )}
+
+                        {extractionConfig.facebookScrapeType === "scrapeComments" && (
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Link to Post (optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={extractionConfig.facebookScrapeValue}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  facebookScrapeValue: e.target.value
+                                }))
+                              }
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                              placeholder="Enter post link"
+                            />
+                          </div>
+                        )}
+
+                        {/* Minimum and Maximum Wait Duration for All Types */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Minimum Wait Duration (optional)
+                            </label>
+                            <input
+                              type="number"
+                              value={extractionConfig.minDelay || 1}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  minDelay: Math.max(1, parseInt(e.target.value) || 1)
+                                }))
+                              }
+                              min="1"
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Maximum Wait Duration (optional)
+                            </label>
+                            <input
+                              type="number"
+                              value={extractionConfig.maxDelay || 7}
+                              onChange={(e) =>
+                                setExtractionConfig(prev => ({
+                                  ...prev,
+                                  maxDelay: Math.max(1, parseInt(e.target.value) || 7)
+                                }))
+                              }
+                              min="1"
+                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Collection Type - Hide for LinkedIn */}
                 {extractionConfig.platform !== "linkedin" &&
                   extractionConfig.platform !== "twitter" &&
@@ -602,121 +808,125 @@ const ExtractionPage = () => {
               </div>
 
               {/* Target Input */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  {extractionConfig.platform === "twitter"
-                    ? "Target (Keyword for Email and Name)"
-                    : "Target (Keyword for Email and Title)"}
-                </label>
-                <input
-                  type="text"
-                  value={extractionConfig.hashtag}
-                  onChange={(e) =>
-                    setExtractionConfig((prev) => ({
-                      ...prev,
-                      hashtag: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                  placeholder={
-                    extractionConfig.platform === "twitter"
-                      ? "Enter a Keyword"
-                      : "Enter a Hashtag"
-                  }
-                />
-              </div>
-
-              {/* Domain Input - Only for Twitter & Facebook */}
-              {["twitter", "facebook"].includes(extractionConfig.platform) && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Domains</label>
-
-                  {/* Ensure at least one input box is always shown */}
-                  {(extractionConfig.domain?.length ? extractionConfig.domain : [""]).map((d, index) => (
-                    <div key={index} className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="text"
-                        value={d}
-                        onChange={(e) => {
-                          const newDomains = [...(extractionConfig.domain || [])]; // Ensure it's an array
-                          newDomains[index] = e.target.value;
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            domain: newDomains,
-                          }));
-                        }}
-                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                        placeholder="Enter domain (e.g., gmail.com)"
-                      />
-
-                      {/* Add Button (Only on first input) */}
-                      {index === 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              domain: [...(prev.domain || []), ""], // Add a new empty input field
-                            }))
-                          }
-                          className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
-                        >
-                          +
-                        </button>
-                      )}
-
-                      {/* Remove Button (Only if more than one input field exists) */}
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              domain: prev.domain?.filter((_, i) => i !== index) || [],
-                            }))
-                          }
-                          className="bg-red-500 px-3 py-2 text-white rounded-lg"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Max Leads Input - Works for Twitter & Facebook */}
-              {["instagram", "linkedin", "twitter", "facebook"].includes(extractionConfig.platform) && (
+              {!(extractionConfig.platform === "facebook" && extractionConfig.facebookScrapeType) && (
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
                     {extractionConfig.platform === "twitter"
-                      ? "Maximum Results"
-                      : "Max Leads per Input"}
+                      ? "Target (Keyword for Email and Name)"
+                      : "Target (Keyword for Email and Title)"}
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={extractionConfig.maxLeadsPerInput || ""}
-                      onChange={(e) =>
-                        setExtractionConfig((prev) => ({
-                          ...prev,
-                          maxLeadsPerInput: Math.max(10, parseInt(e.target.value) || 10), // Ensure minimum of 10
-                        }))
-                      }
-                      min="10"
-                      max="1000"
-                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                      placeholder="10"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                      leads
-                    </div>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-400">
-                    Minimum 10 leads required per extraction
-                  </p>
+                  <input
+                    type="text"
+                    value={extractionConfig.hashtag}
+                    onChange={(e) =>
+                      setExtractionConfig((prev) => ({
+                        ...prev,
+                        hashtag: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                    placeholder={
+                      extractionConfig.platform === "twitter"
+                        ? "Enter a Keyword"
+                        : "Enter a Hashtag"
+                    }
+                  />
                 </div>
               )}
+
+              {/* Domain Input - Only for Twitter & Facebook */}
+              {["twitter", "facebook"].includes(extractionConfig.platform) &&
+                !(extractionConfig.platform === "facebook" && extractionConfig.facebookScrapeType) && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Domains</label>
+
+                    {/* Ensure at least one input box is always shown */}
+                    {(extractionConfig.domain?.length ? extractionConfig.domain : [""]).map((d, index) => (
+                      <div key={index} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={d}
+                          onChange={(e) => {
+                            const newDomains = [...(extractionConfig.domain || [])]; // Ensure it's an array
+                            newDomains[index] = e.target.value;
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              domain: newDomains,
+                            }));
+                          }}
+                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                          placeholder="Enter domain (e.g., gmail.com)"
+                        />
+
+                        {/* Add Button (Only on first input) */}
+                        {index === 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExtractionConfig((prev) => ({
+                                ...prev,
+                                domain: [...(prev.domain || []), ""], // Add a new empty input field
+                              }))
+                            }
+                            className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
+                          >
+                            +
+                          </button>
+                        )}
+
+                        {/* Remove Button (Only if more than one input field exists) */}
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExtractionConfig((prev) => ({
+                                ...prev,
+                                domain: prev.domain?.filter((_, i) => i !== index) || [],
+                              }))
+                            }
+                            className="bg-red-500 px-3 py-2 text-white rounded-lg"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              {/* Max Leads Input - Works for Twitter & Facebook */}
+              {["instagram", "linkedin", "twitter", "facebook"].includes(extractionConfig.platform) &&
+                !(extractionConfig.platform === "facebook" && extractionConfig.facebookScrapeType) && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">
+                      {extractionConfig.platform === "twitter"
+                        ? "Maximum Results"
+                        : "Max Leads per Input"}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={extractionConfig.maxLeadsPerInput || ""}
+                        onChange={(e) =>
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            maxLeadsPerInput: Math.max(10, parseInt(e.target.value) || 10), // Ensure minimum of 10
+                          }))
+                        }
+                        min="10"
+                        max="1000"
+                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                        placeholder="10"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                        leads
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Minimum 10 leads required per extraction
+                    </p>
+                  </div>
+                )}
 
               {/* LinkedIn-specific fields */}
               {extractionConfig.platform === "linkedin" && (
