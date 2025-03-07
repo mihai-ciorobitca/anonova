@@ -25,12 +25,9 @@ import LegalNotices from "../LegalNotices";
 import { useUser } from "../../contexts/UserContext";
 import { useTranslation } from "react-i18next";
 import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
-<<<<<<< HEAD
 import { runTwitterExtraction } from "../../lib/twitterApify";
 import { runFacebookExtraction } from "../../lib/facebookApify.ts";
 import { runFacebookMultiple } from "../../lib/facebookApify.ts";
-=======
->>>>>>> 9d4179fd8692173e74ae3a2d27afa8026f714108
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
 import { ApifyExtractedData } from "../../lib/apify.ts";
@@ -475,7 +472,6 @@ const ExtractionPage = () => {
                         <span>FO</span>
                       </button>
                     </div>
-<<<<<<< HEAD
 
                     {/* Scrape Type Input Fields */}
                     {extractionConfig.facebookScrapeType && (
@@ -624,8 +620,6 @@ const ExtractionPage = () => {
                         </div>
                       </div>
                     )}
-=======
->>>>>>> 9d4179fd8692173e74ae3a2d27afa8026f714108
                   </div>
                 )}
               </div>
