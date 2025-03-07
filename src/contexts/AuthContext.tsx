@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string, planId?: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, planId: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
