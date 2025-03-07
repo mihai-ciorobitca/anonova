@@ -506,19 +506,28 @@ const ExtractionPage = () => {
                     <button
                       key={platform.id}
                       onClick={() =>
+                        platform.id === "instagram" &&  // Only allow click if Instagram
                         setExtractionConfig((prev) => ({
                           ...prev,
                           platform: platform.id,
                         }))
                       }
-                      className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${extractionConfig.platform === platform.id
-                        ? "border-[#0F0] bg-[#0F0]/10"
-                        : "border-gray-700 hover:border-[#0F0]/50"
+                      className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${platform.id !== "instagram"
+                          ? "opacity-50 cursor-not-allowed border-gray-800"  // Disabled style
+                          : extractionConfig.platform === platform.id
+                            ? "border-[#0F0] bg-[#0F0]/10"  // Active Instagram style
+                            : "border-gray-700 hover:border-[#0F0]/50"  // Default Instagram style
                         }`}
+                      disabled={platform.id !== "instagram"}  // Disable attribute
                     >
                       <platform.icon className={`w-8 h-8 ${platform.color}`} />
                       <span className="text-sm font-medium">
                         {platform.name}
+                        {platform.id !== "instagram" && (  // Add "Coming Soon" badge
+                          <span className="block text-xs text-red-500 mt-1">
+                            Coming Soon
+                          </span>
+                        )}
                       </span>
                     </button>
                   ))}
