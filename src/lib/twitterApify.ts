@@ -1,143 +1,153 @@
-import {
-  setData,
-  setAction,
-} from "../features/instagramData/instagramDataSlice";
-
-export type TaskAction = "create" | "download" | "orderDetail";
-
-export interface TwitterInput {
-  taskSource?: string;
-  taskType?: string;
-  emailDomains?: string[];
-  action?: TaskAction;
+export interface ApifyInput {
+  keyword: string;
+  language?: string;
+  country?: string;
   maxLeads?: number;
-  platform?: string;
-  orderId?: string | number | null;
   proxyConfiguration?: {
     useApifyProxy: boolean;
   };
 }
 
-export const runTwitterExtraction = async (
-  input: TwitterInput
-): Promise<any> => {
-  const {
-    taskSource = "",
-    taskType = "",
-    emailDomains = [],
-    maxLeads = null,
-    action = "create",
-    orderId = null,
-    platform = "twitter",
-  } = input;
+export interface ApifyExtractedData {
+  lead: string;
+  username?: string;
+  userLink: string;
+  emails: string[];
+  phones: string[];
+  summary?: string;
+}
 
-  // Validate inputs early
-  if (action === "create") {
-    if (!taskSource) throw new Error("Search keyword is required");
-    if (emailDomains.length === 0) throw new Error("At least one email domain is required");
-  }
+const API_BASE = "/api/apify";
 
-  let apiUrl: string;
-
-  switch (action) {
-    case "download":
-      if (!orderId) throw new Error("Order ID is required for download");
-      apiUrl = `/api/twitter/apify/orders/download/${orderId}`;
-      break;
-    case "orderDetail":
-      if (!orderId) throw new Error("Order ID is required for order details");
-      apiUrl = `/api/twitter/apify/orders/run/${orderId}`;
-      break;
-    default:
-      // Default action is "create"
-      apiUrl = `/api/twitter/apify/orders/create/?taskSource=${encodeURIComponent(
-        taskSource || ""
-      )}&taskType=${encodeURIComponent(
-        taskType || ""
-      )}&maxLeads=${encodeURIComponent(
-        String(maxLeads)
-      )}&platform=${encodeURIComponent(platform)}`;
-      break;
-  }
-
+export const runApifyExtraction = async (
+  input: ApifyInput
+): Promise<ApifyExtractedData[]> => {
   try {
-    if (action === "create") {
-      // Validate input
-      if (!taskSource) {
-        throw new Error("Source is required");
-      }
-
-      if (!maxLeads || maxLeads < 10) {
-        throw new Error("Please specify at least 10 leads to extract");
-      }
+    // Validate input
+    if (!input.keyword) {
+      throw new Error("Keyword is required");
     }
 
-    // Start Creating Order
+    // Start the Actor run
     console.log("Starting extraction with input:", input);
-
-    const response = await fetch(apiUrl, {
-      method: action === "create" ? "POST" : "GET",
+    const response = await fetch(`${API_BASE}/run`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer apify_api_QsgUhYJBU3FwqAl9s61dkErajah9Hr3NkCxz",
       },
-      body: action === "create" ? JSON.stringify({
-        keyword: taskSource,
-        emailDomains: Array.isArray(emailDomains)
-          ? emailDomains.map((d: string) => d.replace("@", ""))
-          : [],
-        maxResults: maxLeads,
-        proxyConfiguration: { useApifyProxy: true }
-      }) : null
+      body: JSON.stringify(input),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || "Failed to perform the requested action"
+      const error = await response.json();
+      throw new Error(error.error || "Failed to start extraction");
+    }
+
+    const runData = await response.json();
+
+    if (!runData.data?.id) {
+      throw new Error("No run ID returned from Apify");
+    }
+
+    const runId = runData.data.id;
+    console.log("Extraction started with run ID:", runId);
+
+    // Poll for completion
+    let isComplete = false;
+    let attempts = 0;
+    const maxAttempts = 30; // 5 minutes with 10-second intervals
+    let lastStatus = "";
+
+    while (!isComplete && attempts < maxAttempts) {
+      console.log(
+        `Checking status (attempt ${attempts + 1}/${maxAttempts})...`
       );
-    }
+      await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait 10 seconds
 
-    const responseText = await response.text(); // Read raw response
-    // console.log("Twitter API Response:", responseText); // Log full response
-
-    if (!response.ok) {
-      throw new Error(`API Request Failed: ${response.status} ${response.statusText} - ${responseText}`);
-    }
-
-    const data = JSON.parse(responseText);
-
-    if (action !== "download") {
-      const resultData = data.data;
-
-      if (action === "create" || action === "orderDetail") {
-        setData(resultData);
-      } else {
-        setAction(JSON.stringify(resultData));
+      const statusResponse = await fetch(`${API_BASE}/run/${runId}`);
+      if (!statusResponse.ok) {
+        const error = await statusResponse.json();
+        throw new Error(error.error || "Failed to check status");
       }
 
-      return resultData;
-    } else {
-      return data;
+      const statusData = await statusResponse.json();
+
+      const status = statusData.data?.status;
+      lastStatus = status;
+
+      if (status === "FAILED") {
+        console.error("Extraction failed:", statusData.data?.errorMessage);
+        throw new Error(statusData.data?.errorMessage || "Extraction failed");
+      }
+
+      if (status === "SUCCEEDED") {
+        console.log("Extraction completed successfully");
+        isComplete = true;
+
+        // Dataset is now included in the status response
+        if (!Array.isArray(statusData.data?.dataset)) {
+          console.error("Invalid dataset format:", statusData.data?.dataset);
+          throw new Error("Invalid dataset format received from server");
+        }
+
+        // Transform the data to match our interface
+        const transformedData: ExtractedData[] = statusData.data.dataset.map(
+          (item) => ({
+            lead: item.lead || "",
+            username: item.username || "",
+            userLink: item.userLink || "",
+            emails: Array.isArray(item.emails)
+              ? item.emails
+              : [item.emails].filter(Boolean),
+            phones: Array.isArray(item.phones)
+              ? item.phones
+              : [item.phones].filter(Boolean),
+            summary: item.summary || undefined,
+          })
+        );
+
+        console.log(`Successfully extracted ${transformedData.length} records`);
+        return transformedData;
+      } else if (
+        status === "RUNNING" ||
+        status === "READY" ||
+        status === "CREATED"
+      ) {
+        console.log(`Extraction status: ${status}`);
+        // Continue polling
+      } else {
+        console.error("Unexpected status:", status);
+        throw new Error(`Unexpected status: ${status}`);
+      }
+
+      attempts++;
     }
+
+    if (!isComplete) {
+      console.error(
+        "Extraction timed out after",
+        maxAttempts,
+        "attempts. Last status:",
+        lastStatus
+      );
+      throw new Error(`Extraction timed out. Last status: ${lastStatus}`);
+    }
+
+    throw new Error("Extraction failed to complete");
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Twitter extraction error:", error.message);
-
-      // Handle specific error types
+      console.error("Extraction error:", error.message);
+      // Check for specific error types
       if (error.message.includes("404")) {
         throw new Error(
           "API endpoint not found. Please check your configuration."
         );
-      } else if (error.message.includes("Source is required")) {
-        throw new Error("Please enter a valid target.");
-      } 
-
+      }
       throw error;
     } else {
-      console.error("Unknown Twitter extraction error:", error);
+      console.error("Unknown extraction error:", error);
       throw new Error(
-        "The extraction service is currently unavailable. Please try again later."
+        "An unexpected error occurred during extraction. Please try again."
       );
     }
   }
