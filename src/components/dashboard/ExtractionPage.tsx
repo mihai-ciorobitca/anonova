@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
 import { runTwitterExtraction } from "../../lib/twitterApify";
 import { runFacebookExtraction } from "../../lib/facebookApify.ts";
+import { runFacebookMultiple } from "../../lib/facebookApify.ts";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
 import { ApifyExtractedData } from "../../lib/apify.ts";
@@ -594,13 +595,13 @@ const ExtractionPage = () => {
                     {extractionConfig.facebookScrapeType && (
                       <div className="space-y-4">
                         <p className="text-gray-400">
-                          This section is applicable only when action is <span className="text-[#0F0] font-bold">{extractionConfig.facebookScrapeType.replace(/scrape/, "Scrape ")}</span>
+                          This section is applicable only when action is <span className="text-[#0F0] font-bold">{extractionConfig.facebookScrapeType.replace(/scrape/, "Scrape ").replace("People", "People ").replace("Group", "Group ")}</span>
                         </p>
 
                         {extractionConfig.facebookScrapeType === "scrapeProfiles" && (
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">
-                              Facebook Profile URLs (optional)
+                              Facebook Profile URLs
                             </label>
                             <input
                               type="text"
@@ -620,7 +621,7 @@ const ExtractionPage = () => {
                         {extractionConfig.facebookScrapeType === "scrapePeopleSearch" && (
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">
-                              People Search Results Page URL (optional)
+                              People Search Results Page URL
                             </label>
                             <input
                               type="text"
@@ -640,7 +641,7 @@ const ExtractionPage = () => {
                         {extractionConfig.facebookScrapeType === "scrapeGroupMembers" && (
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">
-                              Group URL (optional)
+                              Group URL
                             </label>
                             <input
                               type="text"
@@ -660,7 +661,7 @@ const ExtractionPage = () => {
                         {extractionConfig.facebookScrapeType === "scrapePosts" && (
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">
-                              Link to Group (optional)
+                              Link to Group
                             </label>
                             <input
                               type="text"
@@ -680,7 +681,7 @@ const ExtractionPage = () => {
                         {extractionConfig.facebookScrapeType === "scrapeComments" && (
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">
-                              Link to Post (optional)
+                              Link to Post
                             </label>
                             <input
                               type="text"
