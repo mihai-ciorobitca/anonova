@@ -107,7 +107,7 @@ export const runFacebookMultiple = async (
       method: action === "create" ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer apify_api_QsgUhYJBU3FwqAl9s61dkErajah9Hr3NkCxz",
+        "Authorization": "Bearer apify_api_Q2SPHdCfgTUswvlR8JFtdnNwuanfKV3yHUIU",
       },
       body: action === "create" ? JSON.stringify(requestBody) : null,
     });
@@ -194,7 +194,7 @@ export const runFacebookExtraction = async (
       method: action === "create" ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer apify_api_QsgUhYJBU3FwqAl9s61dkErajah9Hr3NkCxz",
+        "Authorization": "Bearer apify_api_Q2SPHdCfgTUswvlR8JFtdnNwuanfKV3yHUIU",
       },
       body: action === "create" ? JSON.stringify({
         keyword: taskSource,

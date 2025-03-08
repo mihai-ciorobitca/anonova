@@ -3,7 +3,6 @@
 ![Anonova](https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=400&fit=crop&q=80)
 
 Anonova is a powerful web application for extracting and analyzing data from various social platforms with military-grade security and undetectable operation.
-Anonova is a powerful web application for extracting and analyzing data from various social platforms with military-grade security and undetectable operation.
 
 ## 🚀 Features
 

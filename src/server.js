@@ -25,18 +25,238 @@ app.options('*', cors());
 app.use(express.json());
 
 // APIFY
-const APIFY_TOKEN = 'apify_api_rumsH9LDuOHE3QK014spshUwsNxhy62uzqGk';
+const APIFY_TOKEN = 'apify_api_Q2SPHdCfgTUswvlR8JFtdnNwuanfKV3yHUIU';
 const APIFY_API_BASE = 'https://api.apify.com/v2';
-
-// LINKEDIN
-const LINKEDIN_ACTOR_ID = 'Oliuhvq8My0EiVIT0';
 
 // ANONOVA
 const ANONOVA_API_KEY = 'db6667ea-e034-4edb-9ea3-fb0af39bdf3e';
 const ANONOVA_API_BASE = 'https://src-marketing101.com/api/orders';
-
+// LINKEDIN
+const LINKEDIN_ACTOR_ID = 'Oliuhvq8My0EiVIT0';
 // TWITTER
-const TWITTER_ACTOR_ID = 'dqJrJj2vnv8K7XMNK'; // Twitter scraper actor ID
+const TWITTER_ACTOR_ID = 'LWWFeND7iepOvdpwd';
+//FACEBOOK
+const FACEBOOK_ACTOR_ID = 'zRbUmMIuEgl5Kjz9S';
+
+// Proxy endpoint for Facebook Apify API
+app.post('/api/facebook/apify/orders/create', async (req, res) => {
+    try {
+        console.log('Received Facebook extraction request:', req.body);
+
+        const response = await fetch(`${APIFY_API_BASE}/acts/${FACEBOOK_ACTOR_ID}/runs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+            body: JSON.stringify(req.body),
+        });
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create Facebook order');
+        }
+
+        const data = await response.json();
+        console.log('Facebook Apify response:', data);
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Facebook proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// proxy endpoint for getting run status facebook
+app.get('/api/facebook/apify/orders/run/:runId', async (req, res) => {
+    try {
+        console.log('Checking Facebook run status:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/actor-runs/${req.params.runId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// Proxy endpoint for download facebook csv
+app.get('/api/facebook/apify/orders/download/:runId', async (req, res) => {
+    try {
+        console.log('Checking run status for download URL:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/datasets/${req.params.runId}/items`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Transform the data to the expected output format
+        const transformedData = data.map(item => ({
+            keywords: item.keywords || '-',
+            emailDomains: item.emailDomains || '-',
+            email: item.email || '-',
+            title: item.title || '-',
+            url: item.url || '-',
+            text: item.text || '-'
+        }));
+
+        // Convert JSON to CSV
+        const csvHeaders = ['keywords', 'emailDomains', 'email', 'title', 'url', 'text'];
+        const csvRows = transformedData.map(item => csvHeaders.map(header => `"${item[header] || ''}"`).join(','));
+        const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+        // Generate a random filename
+        const blobName = crypto.randomUUID(); // Generates a unique ID
+        const filename = `${blobName}.csv`;
+
+        // Define the public folder path
+        const PUBLIC_FOLDER = path.join(process.cwd(), 'downloads');
+
+        // Ensure the public folder exists
+        if (!fs.existsSync(PUBLIC_FOLDER)) {
+            fs.mkdirSync(PUBLIC_FOLDER);
+        }
+
+        // Write CSV text to a file
+        const filePath = path.join(PUBLIC_FOLDER, filename);
+        fs.writeFileSync(filePath, csvContent);
+
+        // Generate the download URL
+        const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
+        console.log(`✅ Facebook data CSV saved as: ${downloadUrl}`);
+        return res.status(200).json({ downloadUrl });
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate CSV file' });
+    }
+});
+
+// Proxy endpoint for Twitter Apify API
+app.post('/api/twitter/apify/orders/create', async (req, res) => {
+    try {
+        console.log('Received Twitter extraction request:', req.body);
+
+        const response = await fetch(`${APIFY_API_BASE}/acts/${TWITTER_ACTOR_ID}/runs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+            body: JSON.stringify(req.body),
+        });
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create Twitter order');
+        }
+
+        const data = await response.json();
+        console.log('Twitter Apify response:', data);
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Twitter proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// proxy endpoint for getting run status twitter
+app.get('/api/twitter/apify/orders/run/:runId', async (req, res) => {
+    try {
+        console.log('Checking Twitter run status:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/actor-runs/${req.params.runId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        res.status(response.status).json(data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Proxy request failed' });
+    }
+});
+
+// Proxy endpoint for download twitter csv
+app.get('/api/twitter/apify/orders/download/:runId', async (req, res) => {
+    try {
+        console.log('Checking run status for download URL:', req.params.runId);
+        const response = await fetch(`${APIFY_API_BASE}/datasets/${req.params.runId}/items`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APIFY_TOKEN}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch run status: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        // Transform the data to the expected output format
+        const transformedData = data.map(item => ({
+            keywords: item.keywords || '-',
+            emailDomains: item.emailDomains || '-',
+            email: item.email || '-',
+            title: item.title || '-',
+            url: item.url || '-',
+            text: item.text || '-'
+        }));
+
+        // Convert JSON to CSV
+        const csvHeaders = ['keywords', 'emailDomains', 'email', 'title', 'url', 'text'];
+        const csvRows = transformedData.map(item => csvHeaders.map(header => `"${item[header] || ''}"`).join(','));
+        const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+        // Generate a random filename
+        const blobName = crypto.randomUUID(); // Generates a unique ID
+        const filename = `${blobName}.csv`;
+
+        // Define the public folder path
+        const PUBLIC_FOLDER = path.join(process.cwd(), 'downloads');
+
+        // Ensure the public folder exists
+        if (!fs.existsSync(PUBLIC_FOLDER)) {
+            fs.mkdirSync(PUBLIC_FOLDER);
+        }
+
+        // Write CSV text to a file
+        const filePath = path.join(PUBLIC_FOLDER, filename);
+        fs.writeFileSync(filePath, csvContent);
+
+        // Generate the download URL
+        const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
+        console.log(`✅ Twitter data CSV saved as: ${downloadUrl}`);
+        return res.status(200).json({ downloadUrl });
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: error.message || 'Failed to generate CSV file' });
+    }
+});
 
 // Proxy endpoint for LinkedIn Apify API
 app.post('/api/linkedin/apify/orders/create/', async (req, res) => {
@@ -91,7 +311,7 @@ app.get('/api/linkedin/apify/orders/run/:runId', async (req, res) => {
     }
 });
 
-// Proxy endpoint for download csv
+// Proxy endpoint for download linkedin csv
 app.get('/api/linkedin/apify/orders/download/:runId', async (req, res) => {
     try {
         console.log('Checking run status for download url:', req.params.runId);
@@ -142,7 +362,7 @@ app.get('/api/linkedin/apify/orders/download/:runId', async (req, res) => {
 
         // Generate the download URL
         const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
-        console.log(`✅ Order CSV saved as: ${downloadUrl}`);
+        console.log(`✅ LinkedIn data CSV saved as: ${downloadUrl}`);
         return res.status(200).json({ downloadUrl });
     } catch (error) {
         console.error('Proxy error:', error);
@@ -220,7 +440,7 @@ app.get('/api/orders/:order_id/download', async (req, res) => {
         const filePath = path.join(PUBLIC_FOLDER, filename);
         fs.writeFileSync(filePath, csvText);
 
-        console.log(`✅ Order CSV saved as: ${filename}`);
+        console.log(`✅ Instagram data CSV saved as: ${filename}`);
 
         // Generate the download URL
         const downloadUrl = `http://localhost:${PORT}/download/${filename}`;
