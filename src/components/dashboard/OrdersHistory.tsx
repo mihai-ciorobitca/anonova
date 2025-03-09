@@ -33,7 +33,6 @@ import {
 import { setAction } from "../../features/instagramData/instagramDataSlice";
 import { response } from "express";
 
-
 export interface Order {
   id: string;
   source_type: string;
@@ -79,6 +78,7 @@ const OrdersHistory = () => {
                 .from("orders")
                 .update({
                   status_display: response.status_display,
+                  scraped_leads: response.scraped_leads,
                 })
                 .eq("results_id", order.results_id);
 
@@ -122,7 +122,10 @@ const OrdersHistory = () => {
                     })
                     .eq("results_id", order.results_id);
                   if (error) {
-                    console.error("Error updating facebook order status:", error);
+                    console.error(
+                      "Error updating facebook order status:",
+                      error
+                    );
                   }
                 }
               }
@@ -163,7 +166,10 @@ const OrdersHistory = () => {
                     })
                     .eq("results_id", order.results_id);
                   if (error) {
-                    console.error("Error updating twitter order status:", error);
+                    console.error(
+                      "Error updating twitter order status:",
+                      error
+                    );
                   }
                 }
               }
@@ -535,9 +541,9 @@ const OrdersHistory = () => {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status === "completed"
+                          order.status_display === "completed"
                             ? "bg-[#0F0]/10 text-[#0F0]"
-                            : order.status === "failed"
+                            : order.status_display === "failed"
                             ? "bg-red-400/10 text-red-400"
                             : "bg-yellow-400/10 text-yellow-400"
                         }`}
@@ -576,7 +582,7 @@ const OrdersHistory = () => {
                             Download CSV
                           </Button>
                         )}
-                      {order.status === "failed" && (
+                      {order.status_display === "failed" && (
                         <>
                           <div className="w-full px-3 py-1.5 text-xs text-red-400 bg-red-400/5 border border-red-400/30 rounded-lg flex items-center justify-center gap-1.5">
                             <AlertCircle className="w-3 h-3" />
