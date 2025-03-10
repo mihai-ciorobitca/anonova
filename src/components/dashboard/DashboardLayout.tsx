@@ -26,10 +26,10 @@ const DashboardLayout = () => {
     { name: t('dashboard.orders'), path: '/dashboard/orders', icon: History },
     { name: t('dashboard.subscription'), path: '/dashboard/subscription', icon: CreditCard },
     { name: t('dashboard.credits'), path: '/dashboard/credits', icon: Wallet },
-    { name: t('dashboard.export'), path: '/dashboard/export', icon: Download },
+    { name: t('dashboard.export'), path: '/dashboard/export', icon: Download, disabled: true },
     { name: t('dashboard.settings'), path: '/dashboard/settings', icon: Settings },
-    { name: t('dashboard.referrals'), path: '/dashboard/referrals', icon: Users },
-    { name: t('dashboard.support'), path: '/dashboard/support', icon: MessageSquare },
+    { name: t('dashboard.referrals'), path: '/dashboard/referrals', icon: Users, disabled: true },
+    { name: t('dashboard.support'), path: '/dashboard/support', icon: MessageSquare, disabled: true },
   ];
   
   // Generate a consistent support ID for the user
@@ -121,24 +121,29 @@ const DashboardLayout = () => {
             <div className="border-t border-[#0F0]/20 my-4" />
             {navigation.map((item) => {
               const isActive = location.pathname === item.path;
+              const isExport = item.name === t('dashboard.export');
               return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
-                    isActive 
-                      ? 'bg-[#0F0]/10 text-[#0F0]' 
-                      : 'text-gray-400 hover:bg-[#0F0]/5 hover:text-[#0F0]'
-                  }`}
-                >
-                  {/* Glitch effect on hover */}
-                  <div className="absolute inset-0 bg-[#0F0]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <div className="absolute right-0 w-1 h-full bg-[#0F0] animate-pulse" />
+                <div key={item.name}>
+                  <Link
+                    to={isExport || item.disabled ? '#' : item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group relative overflow-hidden ${
+                      isActive 
+                        ? 'bg-[#0F0]/10 text-[#0F0]' 
+                        : 'text-gray-400 hover:bg-[#0F0]/5 hover:text-[#0F0]'
+                    } ${isExport || item.disabled ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    {/* Glitch effect on hover */}
+                    <div className="absolute inset-0 bg-[#0F0]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.name}</span>
+                    {isActive && (
+                      <div className="absolute right-0 w-1 h-full bg-[#0F0] animate-pulse" />
+                    )}
+                  </Link>
+                  {(isExport || item.disabled) && (
+                    <span className="text-red-500 text-sm ml-10">Coming Soon</span>
                   )}
-                </Link>
+                </div>
               );
             })}
           </nav>

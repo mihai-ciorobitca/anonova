@@ -14,6 +14,8 @@ import {
   Instagram,
   Twitter,
   Linkedin,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Button from "../Button";
 import { useNavigate } from "react-router-dom";
@@ -66,6 +68,7 @@ const OrdersHistory = () => {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -396,6 +399,10 @@ const OrdersHistory = () => {
     }
   };
 
+  const toggleDateFilter = () => {
+    setIsDateFilterOpen(!isDateFilterOpen);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -491,23 +498,37 @@ const OrdersHistory = () => {
 
       {/* Date Range Filter */}
       <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-[#0F0] mb-4">Filter by Date</h3>
-        <div className="flex gap-4">
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            placeholderText="Start Date"
-            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-            style={{ zIndex: 1000, position: 'relative' }}
-          />
-          <DatePicker
-            selected={endDate}
-            onChange={(date) => setEndDate(date)}
-            placeholderText="End Date"
-            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-            style={{ zIndex: 1000, position: 'relative' }}
-          />
-        </div>
+        <h3
+          className="text-lg font-bold text-[#0F0] mb-4 cursor-pointer flex items-center"
+          onClick={toggleDateFilter}
+        >
+          Filter by Date
+          {isDateFilterOpen ? (
+            <ChevronUp className="w-4 h-4 ml-2" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-2" />
+          )}
+        </h3>
+        {isDateFilterOpen && (
+          <div className="relative z-[1000]">
+            <div className="flex gap-4">
+              <DatePicker
+                selected={startDate}
+                onChange={(date) => setStartDate(date)}
+                placeholderText="Start Date"
+                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                popperClassName="!z-[9999]"
+              />
+              <DatePicker
+                selected={endDate}
+                onChange={(date) => setEndDate(date)}
+                placeholderText="End Date"
+                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                popperClassName="!z-[9999]"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Orders Table */}
