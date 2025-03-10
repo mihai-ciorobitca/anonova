@@ -69,9 +69,20 @@ const OrdersHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+
+  const uniqueStatuses = Array.from(new Set(orders.map(order => order.status_display)));
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(prev =>
+      prev.includes(status)
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
   };
 
   const filteredOrders = orders.filter((order) => {
@@ -80,20 +91,15 @@ const OrdersHistory = () => {
       return false;
     }
 
-    if (!searchQuery.trim()) return true;
-
-    const query = searchQuery.toLowerCase().trim();
-    const matchesQuery =
-      (order.source?.toLowerCase().includes(query) ?? false) ||
-      (order.source_type?.toLowerCase().includes(query) ?? false) ||
-      (order.platform?.toLowerCase().includes(query) ?? false);
-
     const orderDate = new Date(order.created_at);
     const matchesDateRange =
       (!startDate || orderDate >= startDate) &&
       (!endDate || orderDate <= endDate);
 
-    return matchesQuery && matchesDateRange;
+    const matchesStatus =
+      statusFilter.length === 0 || statusFilter.includes(order.status_display);
+
+    return matchesDateRange && matchesStatus;
   });
 
   const paginatedOrders = filteredOrders.slice(
@@ -364,7 +370,7 @@ const OrdersHistory = () => {
   };
 
   const handleContinueScraping = (order: Order) => {
-    navigate("/start-scraping", {
+    navigate("/dashboard/extraction", {
       state: {
         continueExtraction: true,
         orderId: order.id,
@@ -414,7 +420,7 @@ const OrdersHistory = () => {
         </div>
       </div>
 
-      {/* Platform Selection and Search */}
+      {/* Platform Selection */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Platform Filter */}
         <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
@@ -424,111 +430,136 @@ const OrdersHistory = () => {
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
             <button
               onClick={() => setSelectedPlatform("all")}
-              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                selectedPlatform === "all"
-                  ? "border-[#0F0] bg-[#0F0]/10"
-                  : "border-gray-700 hover:border-[#0F0]/50"
-              } min-w-[120px] justify-center px-4`}
+              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${selectedPlatform === "all"
+                ? "border-[#0F0] bg-[#0F0]/10"
+                : "border-gray-700 hover:border-[#0F0]/50"
+                } min-w-[120px] justify-center px-4`}
             >
               <Terminal className="w-4 h-4" />
               <span>All</span>
             </button>
             <button
-              onClick={() => setSelectedPlatform("instagram")}
-              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                selectedPlatform === "instagram"
-                  ? "border-[#0F0] bg-[#0F0]/10"
-                  : "border-gray-700 hover:border-[#0F0]/50"
-              } min-w-[120px] justify-center px-4`}
+              onClick={() => setSelectedPlatform('instagram')}
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${selectedPlatform === 'instagram'
+                ? 'border-[#0F0] bg-[#0F0]/10'
+                : 'border-gray-700 hover:border-[#0F0]/50'
+                } min-w-[120px] justify-center px-4`}
             >
               <Instagram className="w-4 h-4 text-pink-500" />
-              <span>Instagram</span>
+              <span className="capitalize">Instagram</span>
             </button>
             <button
               onClick={() => setSelectedPlatform("linkedin")}
-              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                selectedPlatform === "linkedin"
-                  ? "border-[#0F0] bg-[#0F0]/10"
-                  : "border-gray-700 hover:border-[#0F0]/50"
-              } min-w-[120px] justify-center px-4`}
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${selectedPlatform === "linkedin"
+                ? "border-[#0F0] bg-[#0F0]/10"
+                : "opacity-50 cursor-not-allowed border-gray-800"
+                } min-w-[120px] justify-center px-4`}
+              disabled={true}
             >
               <Linkedin className="w-4 h-4 text-blue-500" />
-              <span>LinkedIn</span>
+              <span className="capitalize">LinkedIn</span>
+              <span className="block text-xs text-red-500 mt-1">Coming Soon</span>
             </button>
             <button
               onClick={() => setSelectedPlatform("facebook")}
-              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                selectedPlatform === "facebook"
-                  ? "border-[#0F0] bg-[#0F0]/10"
-                  : "border-gray-700 hover:border-[#0F0]/50"
-              } min-w-[120px] justify-center px-4`}
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${selectedPlatform === "facebook"
+                ? "border-[#0F0] bg-[#0F0]/10"
+                : "opacity-50 cursor-not-allowed border-gray-800"
+                } min-w-[120px] justify-center px-4`}
+              disabled={true}
             >
               <Facebook className="w-4 h-4 text-blue-600" />
-              <span>Facebook</span>
+              <span className="capitalize">Facebook</span>
+              <span className="block text-xs text-red-500 mt-1">Coming Soon</span>
             </button>
             <button
               onClick={() => setSelectedPlatform("twitter")}
-              className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                selectedPlatform === "twitter"
-                  ? "border-[#0F0] bg-[#0F0]/10"
-                  : "border-gray-700 hover:border-[#0F0]/50"
-              } min-w-[120px] justify-center px-4`}
+              className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all ${selectedPlatform === "twitter"
+                ? "border-[#0F0] bg-[#0F0]/10"
+                : "opacity-50 cursor-not-allowed border-gray-800"
+                } min-w-[120px] justify-center px-4`}
+              disabled={true}
             >
               <Twitter className="w-4 h-4 text-gray-200" />
-              <span>Twitter</span>
+              <span className="capitalize">Twitter</span>
+              <span className="block text-xs text-red-500 mt-1">Coming Soon</span>
             </button>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-[#0F0] mb-4">Search Orders</h3>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by target or type..."
-              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Date Range Filter */}
-      <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
-        <h3
-          className="text-lg font-bold text-[#0F0] mb-4 cursor-pointer flex items-center"
-          onClick={toggleDateFilter}
-        >
-          Filter by Date
-          {isDateFilterOpen ? (
-            <ChevronUp className="w-4 h-4 ml-2" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-2" />
-          )}
-        </h3>
-        {isDateFilterOpen && (
-          <div className="relative z-[1000]">
-            <div className="flex gap-4">
-              <DatePicker
-                selected={startDate}
-                onChange={(date) => setStartDate(date)}
-                placeholderText="Start Date"
-                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                popperClassName="!z-[9999]"
-              />
-              <DatePicker
-                selected={endDate}
-                onChange={(date) => setEndDate(date)}
-                placeholderText="End Date"
-                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                popperClassName="!z-[9999]"
+        {/* Search, Date Range Filter and Status Filter */}
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Search Orders */}
+          <div className="flex-1 bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#0F0] mb-4">Search Orders</h3>
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by target or type..."
+                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
               />
             </div>
           </div>
-        )}
+
+          {/* Date Range Filter and Status Filter */}
+          <div className="flex-1 flex flex-wrap gap-6">
+            {/* Date Range Filter */}
+            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 relative z-50">
+              <h3
+                className="text-lg font-bold text-[#0F0] mb-4 cursor-pointer flex items-center"
+                onClick={toggleDateFilter}
+              >
+                Filter by Date
+                {isDateFilterOpen ? (
+                  <ChevronUp className="w-4 h-4 ml-2" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                )}
+              </h3>
+              {isDateFilterOpen && (
+                <div className="relative z-[100]">
+                  <div className="flex gap-4">
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date) => setStartDate(date)}
+                      placeholderText="Start Date"
+                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                      popperClassName="z-[1000]"
+                    />
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date) => setEndDate(date)}
+                      placeholderText="End Date"
+                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                      popperClassName="z-[1000]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Status Filter */}
+            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-[#0F0] mb-4">Filter by Status</h3>
+              <div className="flex flex-wrap gap-4">
+                {uniqueStatuses.map(status => (
+                  <label key={status} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.includes(status)}
+                      onChange={() => handleStatusChange(status)}
+                      className="form-checkbox text-[#0F0]"
+                    />
+                    <span className="ml-2 text-white">{status}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Orders Table */}
@@ -605,13 +636,12 @@ const OrdersHistory = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status_display === "completed"
-                            ? "bg-[#0F0]/10 text-[#0F0]"
-                            : order.status_display === "failed"
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status_display === "completed"
+                          ? "bg-[#0F0]/10 text-[#0F0]"
+                          : order.status_display === "failed"
                             ? "bg-red-400/10 text-red-400"
                             : "bg-yellow-400/10 text-yellow-400"
-                        }`}
+                          }`}
                       >
                         {order.status_display}
                       </span>
@@ -675,7 +705,7 @@ const OrdersHistory = () => {
                     </p>
                     <Button
                       className="mt-4"
-                      onClick={() => navigate("/start-scraping")}
+                      onClick={() => navigate("/dashboard/extraction")}
                     >
                       Start Extraction
                     </Button>
@@ -698,9 +728,8 @@ const OrdersHistory = () => {
           <button
             key={index + 1}
             onClick={() => handlePageChange(index + 1)}
-            className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${
-              currentPage === index + 1 ? "bg-[#0F0]/20" : ""
-            }`}
+            className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${currentPage === index + 1 ? "bg-[#0F0]/20" : ""
+              }`}
           >
             {index + 1}
           </button>

@@ -68,7 +68,7 @@ const Header = () => {
                   {t('header.dashboard')}
                 </Link>
                 <Link 
-                  to="/start-scraping"
+                  to="/dashboard/extraction"
                   className="text-base text-[#0F0] hover:text-[#0F0]/80 transition-all duration-300 hover:animate-[glitch_0.3s_ease-in-out]"
                 >
                   {t('header.newExtraction')}

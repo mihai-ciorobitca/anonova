@@ -44,7 +44,7 @@ const HomePage = () => {
           {t('home.subtitle')}
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/start-scraping">
+          <Link to="/dashboard/extraction">
             <Button className="w-full sm:w-auto">
               {isAuthenticated ? t('header.newExtraction') : t('home.startButton')}
             </Button>

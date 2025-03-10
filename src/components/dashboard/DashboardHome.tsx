@@ -225,13 +225,13 @@ const DashboardHome = () => {
       icon: Zap, 
       label: 'Start New Extraction', 
       color: 'text-yellow-400',
-      onClick: () => navigate('/start-scraping')
+      onClick: () => navigate('/dashboard/extraction')
     },
     { 
       icon: Download, 
       label: 'Download Data', 
       color: 'text-blue-400',
-      onClick: () => navigate('/dashboard/export')
+      onClick: () => navigate('/dashboard/orders')
     },
     { 
       icon: CreditCard, 
@@ -431,7 +431,7 @@ const DashboardHome = () => {
               <p className="text-gray-400">No recent activity. Start your first extraction!</p>
               <Button 
                 className="mt-4"
-                onClick={() => navigate('/start-scraping')}
+                onClick={() => navigate('/dashboard/extraction')}
               >
                 Start Extraction
               </Button>
