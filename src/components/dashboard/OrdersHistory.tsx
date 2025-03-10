@@ -32,6 +32,8 @@ import {
 } from "../../features/instagramData/instagramDataSlice";
 import { setAction } from "../../features/instagramData/instagramDataSlice";
 import { response } from "express";
+import DatePicker from "react-datepicker"; // Use default import for DatePicker
+import "react-datepicker/dist/react-datepicker.css"; // Import DatePicker CSS
 
 export interface Order {
   id: string;
@@ -60,6 +62,43 @@ const OrdersHistory = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const filteredOrders = orders.filter((order) => {
+    // Filter by platform if selected
+    if (selectedPlatform !== "all" && order.platform !== selectedPlatform) {
+      return false;
+    }
+
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase().trim();
+    const matchesQuery =
+      (order.source?.toLowerCase().includes(query) ?? false) ||
+      (order.source_type?.toLowerCase().includes(query) ?? false) ||
+      (order.platform?.toLowerCase().includes(query) ?? false);
+
+    const orderDate = new Date(order.created_at);
+    const matchesDateRange =
+      (!startDate || orderDate >= startDate) &&
+      (!endDate || orderDate <= endDate);
+
+    return matchesQuery && matchesDateRange;
+  });
+
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
   // Status check interval
   useEffect(() => {
@@ -332,22 +371,6 @@ const OrdersHistory = () => {
     });
   };
 
-  const filteredOrders = orders.filter((order) => {
-    // Filter by platform if selected
-    if (selectedPlatform !== "all" && order.platform !== selectedPlatform) {
-      return false;
-    }
-
-    if (!searchQuery.trim()) return true;
-
-    const query = searchQuery.toLowerCase().trim();
-    return (
-      (order.source?.toLowerCase().includes(query) ?? false) ||
-      (order.source_type?.toLowerCase().includes(query) ?? false) ||
-      (order.platform?.toLowerCase().includes(query) ?? false)
-    );
-  });
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -466,6 +489,27 @@ const OrdersHistory = () => {
         </div>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-[#0F0] mb-4">Filter by Date</h3>
+        <div className="flex gap-4">
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            placeholderText="Start Date"
+            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+            style={{ zIndex: 1000, position: 'relative' }}
+          />
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            placeholderText="End Date"
+            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+            style={{ zIndex: 1000, position: 'relative' }}
+          />
+        </div>
+      </div>
+
       {/* Orders Table */}
       <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -505,8 +549,8 @@ const OrdersHistory = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#0F0]/10">
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
+              {paginatedOrders.length > 0 ? (
+                paginatedOrders.map((order) => (
                   <tr
                     key={order.id}
                     className="hover:bg-[#0F0]/5 transition-colors"
@@ -620,6 +664,33 @@ const OrdersHistory = () => {
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        {Array.from({ length: totalPages }, (_, index) => (
+          <button
+            key={index + 1}
+            onClick={() => handlePageChange(index + 1)}
+            className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${
+              currentPage === index + 1 ? "bg-[#0F0]/20" : ""
+            }`}
+          >
+            {index + 1}
+          </button>
+        ))}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+        >
+          Next
+        </button>
       </div>
     </div>
   );

@@ -140,7 +140,7 @@ const ExtractionPage = () => {
     country: "us",
     language: "en",
     maxResults: 100000000,
-    maxLeadsPerInput: 10,
+    maxLeadsPerInput: 100,
     extractFollowers: false,
     extractFollowing: false,
     continueIncrementalExtraction: false,
@@ -1009,9 +1009,9 @@ const ExtractionPage = () => {
                           setExtractionConfig((prev) => ({
                             ...prev,
                             maxLeadsPerInput: Math.max(
-                              10,
-                              parseInt(e.target.value) || 10
-                            ), // Ensure minimum of 10
+                              100,
+                              parseInt(e.target.value) || 100
+                            ), // Ensure minimum of 100
                           }))
                         }
                         min="10"
@@ -1024,7 +1024,7 @@ const ExtractionPage = () => {
                       </div>
                     </div>
                     <p className="mt-1 text-xs text-gray-400">
-                      Minimum 10 leads required per extraction
+                      Minimum 100 leads required per extraction
                     </p>
                   </div>
                 )}
