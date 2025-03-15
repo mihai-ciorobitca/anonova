@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Search,
   Users,
-  RotateCwIcon,
   Hash,
   Terminal,
   Zap,
@@ -26,9 +25,6 @@ import LegalNotices from "../LegalNotices";
 import { useUser } from "../../contexts/UserContext";
 import { useTranslation } from "react-i18next";
 import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
-import { runTwitterExtraction } from "../../lib/twitterApify";
-import { runFacebookExtraction } from "../../lib/facebookApify.ts";
-import { runFacebookMultiple } from "../../lib/facebookApify.ts";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { supabase } from "../../lib/supabase.ts";
 import { ApifyExtractedData } from "../../lib/apify.ts";
@@ -66,28 +62,16 @@ const platforms = [
     name: "Facebook",
     icon: Facebook,
     color: "text-blue-600",
-    description: "Extract Facebook posts and contact details",
-    features: [
-      "Keyword-based post extraction",
-      "Extract emails from posts",
-      "Post titles & descriptions",
-      "Direct post links",
-      "Post text & hashtags",
-    ],
+    description: "Extract Facebook profiles and groups",
+    features: ["Profile friends", "Group members", "Page followers"],
   },
   {
     id: "twitter" as Platform,
     name: "X/Twitter",
     icon: Twitter,
     color: "text-gray-200",
-    description: "Extract emails and related content from Twitter",
-    features: [
-      "Keyword-based email extraction",
-      "Email domain filtering",
-      "Extracted email addresses",
-      "Associated titles and usernames",
-      "Tweet content and URLs",
-    ],
+    description: "Extract Twitter followers and engagement",
+    features: ["Profile followers", "Tweet engagement", "Hashtag analysis"],
   },
 ];
 
@@ -95,7 +79,6 @@ interface ExtractionConfig {
   isHashtagMode: boolean;
   profileUrl: string;
   hashtag: string;
-  domain?: string[]; // Added domain field
   state?: string;
   country: string;
   language: string;
@@ -103,11 +86,6 @@ interface ExtractionConfig {
   maxLeadsPerInput: number;
   extractFollowers: boolean;
   extractFollowing: boolean;
-  continueIncrementalExtraction: boolean;
-  minDelay: number;
-  maxDelay: number;
-  facebookScrapeType: string;
-  facebookScrapeValue: string;
   platform: Platform;
 }
 
@@ -122,7 +100,6 @@ const ExtractionPage = () => {
   const navigate = useNavigate();
   const { credits, hasUsedFreeCredits, updateUserCredits } = useUser();
   const [loading, setLoading] = useState(false);
-  const [taskType, setTaskType] = useState("HT");
   const [error, setError] = useState("");
   const [extractionResult, setExtractionResult] =
     useState<ExtractionResult | null>(null);
@@ -135,35 +112,21 @@ const ExtractionPage = () => {
     isHashtagMode: false,
     profileUrl: "",
     hashtag: "",
-    domain: [], // Initialize domain
     state: "",
     country: "us",
     language: "en",
     maxResults: 100000000,
     maxLeadsPerInput: 10,
-    extractFollowers: false,
+    extractFollowers: true,
     extractFollowing: false,
-    continueIncrementalExtraction: false,
-    minDelay: 1,
-    maxDelay: 5,
-    facebookScrapeType: "",
-    facebookScrapeValue: "",
     platform: "instagram",
   });
-
-  const [selectedExtractionType, setSelectedExtractionType] = useState("");
 
   const handleStartExtraction = async () => {
     // Validate source/target
     const source = extractionConfig.hashtag.trim();
     if (!source) {
       setError("Please enter a target (hashtag or profile)");
-      return;
-    }
-
-    // For X/Twitter, validate domain
-    if (extractionConfig.platform === "twitter" && !extractionConfig.domain) {
-      setError("Please enter a domain for X/Twitter extraction");
       return;
     }
 
@@ -181,12 +144,9 @@ const ExtractionPage = () => {
       extractionConfig.platform === "instagram" &&
       !extractionConfig.isHashtagMode &&
       !extractionConfig.extractFollowers &&
-      !extractionConfig.extractFollowing &&
-      !extractionConfig.continueIncrementalExtraction
+      !extractionConfig.extractFollowing
     ) {
-      setError(
-        "Please select a collection type (HashTag, Following, Followers or Continuous)"
-      );
+      setError("Please select a collection type (HT, FL, or FO)");
       return;
     }
 
@@ -208,119 +168,10 @@ const ExtractionPage = () => {
     try {
       let results;
 
-      if (extractionConfig.platform === "facebook") {
-        results = await runFacebookExtraction({
-          taskSource: source,
-          emailDomains: Array.isArray(extractionConfig.domain)
-            ? extractionConfig.domain
-            : extractionConfig.domain
-            ? [extractionConfig.domain]
-            : [],
-          maxLeads: extractionConfig.maxLeadsPerInput,
-          action: "create",
-        });
+      // Use runAnonovaExtraction for Instagram
+      const taskType = "HT";
 
-        setExtractionResult({
-          status: "completed",
-          data: results,
-          error: "none",
-        });
-
-        try {
-          // Save twitter order to Supabase order table
-          const { error: ordersError } = await supabase.from("orders").insert({
-            user_id: user.id,
-            source_type: taskType,
-            results_id: results.id,
-            status_display: results.status,
-            source: source,
-            max_leads: extractionConfig.maxLeadsPerInput,
-            platform: extractionConfig.platform,
-          });
-
-          if (ordersError) throw ordersError;
-
-          setExtractionResult({
-            status: results.status || "In the queue",
-            data: results,
-            error: "none",
-          });
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-          // Handle specific database errors
-          if (dbError.message?.includes("Minimum credits required")) {
-            throw new Error(
-              hasUsedFreeCredits
-                ? "Minimum 500 credits required for extraction."
-                : "Minimum 1 credit required for first extraction."
-            );
-          } else if (dbError.message?.includes("Insufficient credits")) {
-            throw new Error(
-              "Not enough credits available. Please purchase more credits to continue."
-            );
-          } else if (dbError.message?.includes("Source is required")) {
-            throw new Error("Please enter a valid target.");
-          } else {
-            throw new Error("Failed to save order. Please try again.");
-          }
-        }
-      } else if (extractionConfig.platform === "twitter") {
-        results = await runTwitterExtraction({
-          taskSource: source,
-          emailDomains: Array.isArray(extractionConfig.domain)
-            ? extractionConfig.domain
-            : extractionConfig.domain
-            ? [extractionConfig.domain]
-            : [],
-          maxLeads: extractionConfig.maxLeadsPerInput,
-          action: "create",
-        });
-
-        setExtractionResult({
-          status: "completed",
-          data: results,
-          error: "none",
-        });
-
-        try {
-          // Save twitter order to Supabase order table
-          const { error: ordersError } = await supabase.from("orders").insert({
-            user_id: user.id,
-            source_type: taskType,
-            results_id: results.id,
-            status_display: results.status,
-            source: source,
-            max_leads: extractionConfig.maxLeadsPerInput,
-            platform: extractionConfig.platform,
-          });
-
-          if (ordersError) throw ordersError;
-
-          setExtractionResult({
-            status: results.status || "In the queue",
-            data: results,
-            error: "none",
-          });
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-          // Handle specific database errors
-          if (dbError.message?.includes("Minimum credits required")) {
-            throw new Error(
-              hasUsedFreeCredits
-                ? "Minimum 500 credits required for extraction."
-                : "Minimum 1 credit required for first extraction."
-            );
-          } else if (dbError.message?.includes("Insufficient credits")) {
-            throw new Error(
-              "Not enough credits available. Please purchase more credits to continue."
-            );
-          } else if (dbError.message?.includes("Source is required")) {
-            throw new Error("Please enter a valid target.");
-          } else {
-            throw new Error("Failed to save order. Please try again.");
-          }
-        }
-      } else if (extractionConfig.platform === "linkedin") {
+      if (extractionConfig.platform === "linkedin") {
         // Use runApifyExtraction for LinkedIn
         results = await runLinkedInExtraction({
           taskSource: source,
@@ -378,13 +229,13 @@ const ExtractionPage = () => {
       } else if (extractionConfig.platform === "instagram") {
         results = await runAnonovaExtraction({
           taskSource: source,
-          taskType: taskType,
+          taskType,
           maxLeads: extractionConfig.maxLeadsPerInput,
           action: "create",
         });
 
         try {
-          // Save instagram order to Supabase instagram order table
+          // Save instagram order to Supabase isntagram order table
           const { data: orderData, error: orderError } = await supabase.rpc(
             "handle_instagram_order",
             {
@@ -514,29 +365,20 @@ const ExtractionPage = () => {
                     <button
                       key={platform.id}
                       onClick={() =>
-                        platform.id === "instagram" && // Only allow click if Instagram
                         setExtractionConfig((prev) => ({
                           ...prev,
                           platform: platform.id,
                         }))
                       }
                       className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${
-                        platform.id !== "instagram"
-                          ? "opacity-50 cursor-not-allowed border-gray-800" // Disabled style
-                          : extractionConfig.platform === platform.id
-                          ? "border-[#0F0] bg-[#0F0]/10" // Active Instagram style
-                          : "border-gray-700 hover:border-[#0F0]/50" // Default Instagram style
+                        extractionConfig.platform === platform.id
+                          ? "border-[#0F0] bg-[#0F0]/10"
+                          : "border-gray-700 hover:border-[#0F0]/50"
                       }`}
-                      disabled={platform.id !== "instagram"} // Disable attribute
                     >
                       <platform.icon className={`w-8 h-8 ${platform.color}`} />
                       <span className="text-sm font-medium">
                         {platform.name}
-                        {platform.id !== "instagram" && ( // Add "Coming Soon" badge
-                          <span className="block text-xs text-red-500 mt-1">
-                            Coming Soon
-                          </span>
-                        )}
                       </span>
                     </button>
                   ))}
@@ -563,471 +405,119 @@ const ExtractionPage = () => {
                       ))}
                   </ul>
                 </div>
-
-                {/* Facebook-specific Scrape Type */}
-                {extractionConfig.platform === "facebook" && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-2">
-                        Scrape Operation
-                      </label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <button
-                          onClick={() =>
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              facebookScrapeType: "",
-                              facebookScrapeValue: "",
-                            }))
-                          }
-                          className={`p-3 rounded-lg border transition-all ${
-                            !extractionConfig.facebookScrapeType
-                              ? "border-[#0F0] bg-[#0F0]/10"
-                              : "border-gray-700 hover:border-[#0F0]/50"
-                          }`}
-                        >
-                          Basic Parameters
-                        </button>
-
-                        <select
-                          value={extractionConfig.facebookScrapeType || ""}
-                          onChange={(e) =>
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              facebookScrapeType: e.target.value || "",
-                              facebookScrapeValue: "",
-                            }))
-                          }
-                          className="bg-black/50 border border-[#0F0]/30 rounded-lg p-3 text-white focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                        >
-                          <option value="">Select Scrape Type...</option>
-                          <option value="scrapeProfiles">
-                            Scrape Profiles
-                          </option>
-                          <option value="scrapePeopleSearch">
-                            Scrape People Search Results
-                          </option>
-                          <option value="scrapeGroupMembers">
-                            Scrape Group Members
-                          </option>
-                          <option value="scrapePosts">Scrape Posts</option>
-                          <option value="scrapeComments">
-                            Scrape Comments
-                          </option>
-                        </select>
-                      </div>
+                {/* Collection Type - Hide for LinkedIn */}
+                {extractionConfig.platform !== "linkedin" && (
+                  <div className="mt-6">
+                    <label className="block text-sm text-gray-400 mb-2">
+                      Collection Type
+                    </label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <button
+                        onClick={() =>
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            isHashtagMode: true,
+                            extractFollowers: false,
+                            extractFollowing: false,
+                          }))
+                        }
+                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                          extractionConfig.isHashtagMode
+                            ? "border-[#0F0] bg-[#0F0]/10"
+                            : "border-gray-700 hover:border-[#0F0]/50"
+                        }`}
+                      >
+                        <Hash className="w-4 h-4" />
+                        <span>HT</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            isHashtagMode: false,
+                            extractFollowers: true,
+                            extractFollowing: false,
+                          }))
+                        }
+                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                          !extractionConfig.isHashtagMode &&
+                          extractionConfig.extractFollowers
+                            ? "border-[#0F0] bg-[#0F0]/10"
+                            : "border-gray-700 hover:border-[#0F0]/50"
+                        }`}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>FL</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            isHashtagMode: false,
+                            extractFollowers: false,
+                            extractFollowing: true,
+                          }))
+                        }
+                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                          !extractionConfig.isHashtagMode &&
+                          extractionConfig.extractFollowing
+                            ? "border-[#0F0] bg-[#0F0]/10"
+                            : "border-gray-700 hover:border-[#0F0]/50"
+                        }`}
+                      >
+                        <Users className="w-4 h-4" />
+                        <span>FO</span>
+                      </button>
                     </div>
-
-                    {/* Scrape Type Input Fields */}
-                    {extractionConfig.facebookScrapeType && (
-                      <div className="space-y-4">
-                        <p className="text-gray-400">
-                          This section is applicable only when action is{" "}
-                          <span className="text-[#0F0] font-bold">
-                            {extractionConfig.facebookScrapeType
-                              .replace(/scrape/, "Scrape ")
-                              .replace("People", "People ")
-                              .replace("Group", "Group ")}
-                          </span>
-                        </p>
-
-                        {extractionConfig.facebookScrapeType ===
-                          "scrapeProfiles" && (
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Facebook Profile URLs
-                            </label>
-                            <input
-                              type="text"
-                              value={extractionConfig.facebookScrapeValue}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  facebookScrapeValue: e.target.value,
-                                }))
-                              }
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Enter profile URLs (comma-separated)"
-                            />
-                          </div>
-                        )}
-
-                        {extractionConfig.facebookScrapeType ===
-                          "scrapePeopleSearch" && (
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              People Search Results Page URL
-                            </label>
-                            <input
-                              type="text"
-                              value={extractionConfig.facebookScrapeValue}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  facebookScrapeValue: e.target.value,
-                                }))
-                              }
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Enter search URL"
-                            />
-                          </div>
-                        )}
-
-                        {extractionConfig.facebookScrapeType ===
-                          "scrapeGroupMembers" && (
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Group URL
-                            </label>
-                            <input
-                              type="text"
-                              value={extractionConfig.facebookScrapeValue}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  facebookScrapeValue: e.target.value,
-                                }))
-                              }
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Enter group URL"
-                            />
-                          </div>
-                        )}
-
-                        {extractionConfig.facebookScrapeType ===
-                          "scrapePosts" && (
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Link to Group
-                            </label>
-                            <input
-                              type="text"
-                              value={extractionConfig.facebookScrapeValue}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  facebookScrapeValue: e.target.value,
-                                }))
-                              }
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Enter group link"
-                            />
-                          </div>
-                        )}
-
-                        {extractionConfig.facebookScrapeType ===
-                          "scrapeComments" && (
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Link to Post
-                            </label>
-                            <input
-                              type="text"
-                              value={extractionConfig.facebookScrapeValue}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  facebookScrapeValue: e.target.value,
-                                }))
-                              }
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Enter post link"
-                            />
-                          </div>
-                        )}
-
-                        {/* Minimum and Maximum Wait Duration for All Types */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Minimum Wait Duration (optional)
-                            </label>
-                            <input
-                              type="number"
-                              value={extractionConfig.minDelay || 1}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  minDelay: Math.max(
-                                    1,
-                                    parseInt(e.target.value) || 1
-                                  ),
-                                }))
-                              }
-                              min="1"
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm text-gray-400 mb-2">
-                              Maximum Wait Duration (optional)
-                            </label>
-                            <input
-                              type="number"
-                              value={extractionConfig.maxDelay || 7}
-                              onChange={(e) =>
-                                setExtractionConfig((prev) => ({
-                                  ...prev,
-                                  maxDelay: Math.max(
-                                    1,
-                                    parseInt(e.target.value) || 7
-                                  ),
-                                }))
-                              }
-                              min="1"
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
-
-                {/* Collection Type - Hide for LinkedIn */}
-                {extractionConfig.platform !== "linkedin" &&
-                  extractionConfig.platform !== "twitter" &&
-                  extractionConfig.platform !== "facebook" && (
-                    <div className="mt-6">
-                      <label className="block text-sm text-gray-400 mb-2">
-                        Collection Type
-                      </label>
-                      <div className="grid grid-cols-3 gap-4">
-                        <button
-                          onClick={() => {
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              isHashtagMode: true,
-                              extractFollowers: false,
-                              extractFollowing: false,
-                              continueIncrementalExtraction: false,
-                            }));
-                            setTaskType("HT");
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                            extractionConfig.isHashtagMode
-                              ? "border-[#0F0] bg-[#0F0]/10"
-                              : "border-gray-700 hover:border-[#0F0]/50"
-                          }`}
-                        >
-                          <Hash className="w-4 h-4" />
-                          <span>HASH TAG</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              isHashtagMode: false,
-                              extractFollowers: true,
-                              extractFollowing: false,
-                              continueIncrementalExtraction: false,
-                            }));
-                            setTaskType("FO");
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                            !extractionConfig.isHashtagMode &&
-                            extractionConfig.extractFollowers
-                              ? "border-[#0F0] bg-[#0F0]/10"
-                              : "border-gray-700 hover:border-[#0F0]/50"
-                          }`}
-                        >
-                          <Users className="w-4 h-4" />
-                          <span>FOLLOWING</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              isHashtagMode: false,
-                              extractFollowers: false,
-                              extractFollowing: true,
-                              continueIncrementalExtraction: false,
-                            }));
-                            setTaskType("FL");
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                            !extractionConfig.isHashtagMode &&
-                            extractionConfig.extractFollowing
-                              ? "border-[#0F0] bg-[#0F0]/10"
-                              : "border-gray-700 hover:border-[#0F0]/50"
-                          }`}
-                        >
-                          <Users className="w-4 h-4" />
-                          <span>FOLLOWERS</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              isHashtagMode: false,
-                              extractFollowers: false,
-                              extractFollowing: false,
-                              continueIncrementalExtraction: true,
-                            }));
-                            setTaskType("CO");
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                            !extractionConfig.isHashtagMode &&
-                            extractionConfig.continueIncrementalExtraction
-                              ? "border-[#0F0] bg-[#0F0]/10"
-                              : "border-gray-700 hover:border-[#0F0]/50"
-                          }`}
-                        >
-                          <RotateCwIcon className="w-4 h-4" />
-                          <span>CONTINUOUS</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
               </div>
 
-              {/* Target Input */}
-              {!(
-                extractionConfig.platform === "facebook" &&
-                extractionConfig.facebookScrapeType
-              ) && (
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">
-                    {extractionConfig.platform === "twitter"
-                      ? "Target (Keyword for Email and Name)"
-                      : "Target (Keyword for Email and Title)"}
-                  </label>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Target
+                </label>
+                <input
+                  type="text"
+                  value={extractionConfig.hashtag}
+                  onChange={(e) =>
+                    setExtractionConfig((prev) => ({
+                      ...prev,
+                      hashtag: e.target.value,
+                    }))
+                  }
+                  className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                  placeholder="Enter a Hashtag"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Max Leads per Input
+                </label>
+                <div className="relative">
                   <input
-                    type="text"
-                    value={extractionConfig.hashtag}
+                    type="number"
+                    value={extractionConfig.maxLeadsPerInput}
                     onChange={(e) =>
                       setExtractionConfig((prev) => ({
                         ...prev,
-                        hashtag: e.target.value,
+                        maxLeadsPerInput: parseInt(e.target.value) || 10,
                       }))
                     }
+                    min={10}
+                    max={extractionConfig.maxResults}
                     className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    placeholder={
-                      extractionConfig.platform === "twitter"
-                        ? "Enter a Keyword"
-                        : "Enter a Hashtag"
-                    }
+                    placeholder="10"
                   />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                    leads
+                  </div>
                 </div>
-              )}
-
-              {/* Domain Input - Only for Twitter & Facebook */}
-              {["twitter", "facebook"].includes(extractionConfig.platform) &&
-                !(
-                  extractionConfig.platform === "facebook" &&
-                  extractionConfig.facebookScrapeType
-                ) && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Domains
-                    </label>
-
-                    {/* Ensure at least one input box is always shown */}
-                    {(extractionConfig.domain?.length
-                      ? extractionConfig.domain
-                      : [""]
-                    ).map((d, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center space-x-2 mb-2"
-                      >
-                        <input
-                          type="text"
-                          value={d}
-                          onChange={(e) => {
-                            const newDomains = [
-                              ...(extractionConfig.domain || []),
-                            ]; // Ensure it's an array
-                            newDomains[index] = e.target.value;
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              domain: newDomains,
-                            }));
-                          }}
-                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                          placeholder="Enter domain (e.g., gmail.com)"
-                        />
-
-                        {/* Add Button (Only on first input) */}
-                        {index === 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExtractionConfig((prev) => ({
-                                ...prev,
-                                domain: [...(prev.domain || []), ""], // Add a new empty input field
-                              }))
-                            }
-                            className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
-                          >
-                            +
-                          </button>
-                        )}
-
-                        {/* Remove Button (Only if more than one input field exists) */}
-                        {index > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExtractionConfig((prev) => ({
-                                ...prev,
-                                domain:
-                                  prev.domain?.filter((_, i) => i !== index) ||
-                                  [],
-                              }))
-                            }
-                            className="bg-red-500 px-3 py-2 text-white rounded-lg"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              {/* Max Leads Input - Works for Twitter & Facebook */}
-              {["instagram", "linkedin", "twitter", "facebook"].includes(
-                extractionConfig.platform
-              ) &&
-                !(
-                  extractionConfig.platform === "facebook" &&
-                  extractionConfig.facebookScrapeType
-                ) && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      {extractionConfig.platform === "twitter"
-                        ? "Maximum Results"
-                        : "Max Leads per Input"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={extractionConfig.maxLeadsPerInput || ""}
-                        onChange={(e) =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            maxLeadsPerInput: Math.max(
-                              10,
-                              parseInt(e.target.value) || 10
-                            ), // Ensure minimum of 10
-                          }))
-                        }
-                        min="10"
-                        max="1000"
-                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                        placeholder="10"
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                        leads
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Minimum 10 leads required per extraction
-                    </p>
-                  </div>
-                )}
+                <p className="mt-1 text-xs text-gray-400">
+                  Minimum 10 leads required per extraction
+                </p>
+              </div>
 
               {/* LinkedIn-specific fields */}
               {extractionConfig.platform === "linkedin" && (
@@ -1209,8 +699,7 @@ const ExtractionPage = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400">
-                  Successfully created {extractionConfig.platform} order.
-                  Results are in orders.
+                  Successfully created order. Results are in orders.
                 </div>
               )}
             </div>

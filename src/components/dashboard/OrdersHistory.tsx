@@ -23,8 +23,6 @@ import LegalNotices from "../LegalNotices";
 import { supabase } from "../../lib/supabase";
 import { runAnonovaExtraction } from "../../lib/anonova";
 import { runLinkedInExtraction } from "../../lib/linkedInApify";
-import { runTwitterExtraction } from "../../lib/twitterApify";
-import { runFacebookExtraction } from "../../lib/facebookApify";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectData,
@@ -78,7 +76,6 @@ const OrdersHistory = () => {
                 .from("orders")
                 .update({
                   status_display: response.status_display,
-                  scraped_leads: response.scraped_leads,
                 })
                 .eq("results_id", order.results_id);
 
@@ -88,94 +85,6 @@ const OrdersHistory = () => {
             }
           } catch (err) {
             console.error("Error running Anonova extraction:", err);
-          }
-        } else if (order.platform === "facebook") {
-          try {
-            const response = await runFacebookExtraction({
-              action: "orderDetail",
-              orderId: order.results_id,
-            });
-
-            if (response.status) {
-              const { error } = await supabase
-                .from("orders")
-                .update({
-                  status_display: response.status,
-                })
-                .eq("results_id", order.results_id);
-
-              if (error) {
-                console.error("Error updating facebook order status:", error);
-              }
-
-              if (response.status === "SUCCEEDED") {
-                const downloadUrlResponse = await runFacebookExtraction({
-                  action: "download",
-                  orderId: response.defaultDatasetId,
-                });
-
-                if (downloadUrlResponse) {
-                  const { error } = await supabase
-                    .from("orders")
-                    .update({
-                      csv_url: downloadUrlResponse,
-                    })
-                    .eq("results_id", order.results_id);
-                  if (error) {
-                    console.error(
-                      "Error updating facebook order status:",
-                      error
-                    );
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.error("Error running Facebook extraction:", err);
-          }
-        } else if (order.platform === "twitter") {
-          try {
-            const response = await runTwitterExtraction({
-              action: "orderDetail",
-              orderId: order.results_id,
-            });
-
-            if (response.status) {
-              const { error } = await supabase
-                .from("orders")
-                .update({
-                  status_display: response.status,
-                })
-                .eq("results_id", order.results_id);
-
-              if (error) {
-                console.error("Error updating twitter order status:", error);
-              }
-
-              if (response.status === "SUCCEEDED") {
-                const downloadUrlResponse = await runTwitterExtraction({
-                  action: "download",
-                  orderId: response.defaultDatasetId,
-                });
-
-                if (downloadUrlResponse) {
-                  const { error } = await supabase
-                    .from("orders")
-                    .update({
-                      csv_url: downloadUrlResponse,
-                    })
-                    .eq("results_id", order.results_id);
-                  if (error) {
-                    console.error(
-                      "Error updating twitter order status:",
-                      error
-                    );
-                  }
-                }
-              }
-            }
-          } catch (err) {
-            console.error("Error running Twitter extraction:", err);
           }
         } else if (order.platform === "linkedin") {
           try {
@@ -541,9 +450,9 @@ const OrdersHistory = () => {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status_display === "completed"
+                          order.status === "completed"
                             ? "bg-[#0F0]/10 text-[#0F0]"
-                            : order.status_display === "failed"
+                            : order.status === "failed"
                             ? "bg-red-400/10 text-red-400"
                             : "bg-yellow-400/10 text-yellow-400"
                         }`}
@@ -582,7 +491,7 @@ const OrdersHistory = () => {
                             Download CSV
                           </Button>
                         )}
-                      {order.status_display === "failed" && (
+                      {order.status === "failed" && (
                         <>
                           <div className="w-full px-3 py-1.5 text-xs text-red-400 bg-red-400/5 border border-red-400/30 rounded-lg flex items-center justify-center gap-1.5">
                             <AlertCircle className="w-3 h-3" />
