@@ -422,7 +422,7 @@ const OrdersHistory = () => {
 
       {/* Platform Selection */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Platform Filter */}
+        {/* Platform Filter with Date Filter inside */}
         <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
           <h3 className="text-lg font-bold text-[#0F0] mb-4">
             Select Platform
@@ -485,78 +485,70 @@ const OrdersHistory = () => {
               <span className="block text-xs text-red-500 mt-1">Coming Soon</span>
             </button>
           </div>
+          {/* Date Range Filter inside Platform Filter */}
+          <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 relative z-50 mt-6">
+            <h3
+              className="text-lg font-bold text-[#0F0] mb-4 cursor-pointer flex items-center"
+              onClick={toggleDateFilter}
+            >
+              Filter by Date
+              {isDateFilterOpen ? (
+                <ChevronUp className="w-4 h-4 ml-2" />
+              ) : (
+                <ChevronDown className="w-4 h-4 ml-2" />
+              )}
+            </h3>
+            {isDateFilterOpen && (
+              <div className="relative z-[100]">
+                <div className="flex gap-4">
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date) => setStartDate(date)}
+                    placeholderText="Start Date"
+                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                    popperClassName="z-[1000]"
+                  />
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date) => setEndDate(date)}
+                    placeholderText="End Date"
+                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                    popperClassName="z-[1000]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Search, Date Range Filter and Status Filter */}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Search Orders */}
-          <div className="flex-1 bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-[#0F0] mb-4">Search Orders</h3>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by target or type..."
-                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-              />
-            </div>
+        {/* Search Orders with Status Filter inside */}
+        <div className="flex-1 bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-[#0F0] mb-4">Search Orders</h3>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by target or type..."
+              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+            />
           </div>
-
-          {/* Date Range Filter and Status Filter */}
-          <div className="flex-1 flex flex-wrap gap-6">
-            {/* Date Range Filter */}
-            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 relative z-50">
-              <h3
-                className="text-lg font-bold text-[#0F0] mb-4 cursor-pointer flex items-center"
-                onClick={toggleDateFilter}
-              >
-                Filter by Date
-                {isDateFilterOpen ? (
-                  <ChevronUp className="w-4 h-4 ml-2" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 ml-2" />
-                )}
-              </h3>
-              {isDateFilterOpen && (
-                <div className="relative z-[100]">
-                  <div className="flex gap-4">
-                    <DatePicker
-                      selected={startDate}
-                      onChange={(date) => setStartDate(date)}
-                      placeholderText="Start Date"
-                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                      popperClassName="z-[1000]"
-                    />
-                    <DatePicker
-                      selected={endDate}
-                      onChange={(date) => setEndDate(date)}
-                      placeholderText="End Date"
-                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                      popperClassName="z-[1000]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Status Filter */}
-            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
-              <h3 className="text-lg font-bold text-[#0F0] mb-4">Filter by Status</h3>
-              <div className="flex flex-wrap gap-4">
-                {uniqueStatuses.map(status => (
-                  <label key={status} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={statusFilter.includes(status)}
-                      onChange={() => handleStatusChange(status)}
-                      className="form-checkbox text-[#0F0]"
-                    />
-                    <span className="ml-2 text-white">{status}</span>
-                  </label>
-                ))}
-              </div>
+          {/* Status Filter inside Search Orders */}
+          <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 mt-6">
+            <h3 className="text-lg font-bold text-[#0F0] mb-4">Filter by Status</h3>
+            <div className="flex flex-wrap gap-4">
+              {uniqueStatuses.map(status => (
+                <label key={status} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={statusFilter.includes(status)}
+                    onChange={() => handleStatusChange(status)}
+                    className="form-checkbox text-[#0F0]"
+                  />
+                  <span className="ml-2 text-white">{status}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>

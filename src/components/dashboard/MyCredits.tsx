@@ -9,7 +9,7 @@ import { useUser } from "../../contexts/UserContext";
 const MyCredits = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { credits, setCredits } = useUser();
+  const { credits, setCredits, averageCreditsPerMonth, setAverageCreditsPerMonth } = useUser();
   const [creditAmount, setCreditAmount] = useState<number>(2500);
   const [currentPlan, setCurrentPlan] = useState("Loading...");
 
@@ -47,6 +47,37 @@ const MyCredits = () => {
 
     fetchUserData();
   }, [user, setCredits]);
+
+  useEffect(() => {
+    const fetchCreditUsage = async () => {
+      if (!user) return;
+
+      try {
+        const { data: usageData, error } = await supabase
+          .from('user_activities')
+          .select(`created_at, credits_change`)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        console.log('Fetched usage data:', usageData); // Log fetched data
+
+        if (usageData && usageData.length > 0) {
+          const totalCreditsUsed = usageData.reduce((sum, record) => sum + Math.abs(record.credits_change), 0);
+          const uniqueMonths = new Set(usageData.map(record => `${new Date(record.created_at).getFullYear()}-${new Date(record.created_at).getMonth()}`));
+          console.log('Total credits used:', totalCreditsUsed, 'Unique months:', uniqueMonths.size); // Log calculations
+          setAverageCreditsPerMonth(totalCreditsUsed / Math.max(uniqueMonths.size, 1)); // Avoid division by zero
+        } else {
+          console.log('No usage data available.');
+          setAverageCreditsPerMonth(0); // Set to 0 if no data
+        }
+      } catch (error) {
+        console.error('Error fetching credit usage data:', error);
+      }
+    };
+
+    fetchCreditUsage();
+  }, [user, setAverageCreditsPerMonth]);
 
   const minimumCredits = {
     "Free Plan": 500,
@@ -145,6 +176,20 @@ const MyCredits = () => {
                 ) : (
                   credits.toLocaleString()
                 )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-4 border border-[#0F0]/20 rounded-lg">
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-5 h-5 text-[#0F0]" />
+                <div>
+                  <div className="font-semibold">Average Credits Used Per Month</div>
+                  <div className="text-sm text-gray-400">
+                    Your average monthly usage
+                  </div>
+                </div>
+              </div>
+              <span className="text-[#0F0] font-mono">
+                {averageCreditsPerMonth ? averageCreditsPerMonth.toFixed(2) : 'N/A'}
               </span>
             </div>
           </div>
