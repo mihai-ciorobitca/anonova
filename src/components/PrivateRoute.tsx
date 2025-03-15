@@ -19,7 +19,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/start-scraping" />;
+    return <Navigate to="/dashboard/extraction" />;
   }
 
   if (!isVerified) {

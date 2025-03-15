@@ -116,8 +116,13 @@ const ExtractionPage = () => {
     country: "us",
     language: "en",
     maxResults: 100000000,
+<<<<<<< HEAD
     maxLeadsPerInput: 10,
     extractFollowers: true,
+=======
+    maxLeadsPerInput: 100,
+    extractFollowers: false,
+>>>>>>> 54e7e2c0d9999136270e185f8aae1db848c91c0a
     extractFollowing: false,
     platform: "instagram",
   });
@@ -514,10 +519,131 @@ const ExtractionPage = () => {
                     leads
                   </div>
                 </div>
+<<<<<<< HEAD
                 <p className="mt-1 text-xs text-gray-400">
                   Minimum 10 leads required per extraction
                 </p>
               </div>
+=======
+              )}
+
+              {/* Domain Input - Only for Twitter & Facebook */}
+              {["twitter", "facebook"].includes(extractionConfig.platform) &&
+                !(
+                  extractionConfig.platform === "facebook" &&
+                  extractionConfig.facebookScrapeType
+                ) && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">
+                      Domains
+                    </label>
+
+                    {/* Ensure at least one input box is always shown */}
+                    {(extractionConfig.domain?.length
+                      ? extractionConfig.domain
+                      : [""]
+                    ).map((d, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center space-x-2 mb-2"
+                      >
+                        <input
+                          type="text"
+                          value={d}
+                          onChange={(e) => {
+                            const newDomains = [
+                              ...(extractionConfig.domain || []),
+                            ]; // Ensure it's an array
+                            newDomains[index] = e.target.value;
+                            setExtractionConfig((prev) => ({
+                              ...prev,
+                              domain: newDomains,
+                            }));
+                          }}
+                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                          placeholder="Enter domain (e.g., gmail.com)"
+                        />
+
+                        {/* Add Button (Only on first input) */}
+                        {index === 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExtractionConfig((prev) => ({
+                                ...prev,
+                                domain: [...(prev.domain || []), ""], // Add a new empty input field
+                              }))
+                            }
+                            className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
+                          >
+                            +
+                          </button>
+                        )}
+
+                        {/* Remove Button (Only if more than one input field exists) */}
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExtractionConfig((prev) => ({
+                                ...prev,
+                                domain:
+                                  prev.domain?.filter((_, i) => i !== index) ||
+                                  [],
+                              }))
+                            }
+                            className="bg-red-500 px-3 py-2 text-white rounded-lg"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              {/* Max Leads Input - Works for Twitter & Facebook */}
+              {["instagram", "linkedin", "twitter", "facebook"].includes(
+                extractionConfig.platform
+              ) &&
+                !(
+                  extractionConfig.platform === "facebook" &&
+                  extractionConfig.facebookScrapeType
+                ) && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">
+                      {extractionConfig.platform === "twitter"
+                        ? "Maximum Results"
+                        : "Max Leads per Input"}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={extractionConfig.maxLeadsPerInput || ""}
+                        onChange={(e) =>
+                          setExtractionConfig((prev) => ({
+                            ...prev,
+                            maxLeadsPerInput: Math.max(
+                              100,
+                              parseInt(e.target.value) || 100
+                            ), // Ensure minimum of 100
+                          }))
+                        }
+                        min="10"
+                        max="1000"
+                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                        placeholder="10"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                        leads
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Minimum 100 leads required per extraction
+                    </p>
+                  </div>
+                )}
+>>>>>>> 54e7e2c0d9999136270e185f8aae1db848c91c0a
 
               {/* LinkedIn-specific fields */}
               {extractionConfig.platform === "linkedin" && (

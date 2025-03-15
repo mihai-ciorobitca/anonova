@@ -39,6 +39,8 @@ const WalletPage = () => {
   const [gasPrice, setGasPrice] = useState('45');
   const [gasLimit, setGasLimit] = useState('21000');
   const [transactionSpeed, setTransactionSpeed] = useState('fast');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const cryptoBalances = {
     eth: {
@@ -56,6 +58,17 @@ const WalletPage = () => {
       usdValue: '1,500.00',
       address: '0xabcd...efgh',
     },
+  };
+
+  const paginatedTransactions = transactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
   return (
@@ -191,7 +204,7 @@ const WalletPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#0F0]/10">
-                  {transactions.map((tx) => (
+                  {paginatedTransactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-[#0F0]/5 transition-colors">
                       <td className="px-6 py-4 text-sm font-mono text-[#0F0]">{tx.id}</td>
                       <td className="px-6 py-4">
@@ -225,6 +238,21 @@ const WalletPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="pagination-controls mt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
             </div>
           </div>
         </>

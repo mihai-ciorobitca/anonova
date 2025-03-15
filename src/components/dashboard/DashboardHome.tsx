@@ -225,13 +225,13 @@ const DashboardHome = () => {
       icon: Zap, 
       label: 'Start New Extraction', 
       color: 'text-yellow-400',
-      onClick: () => navigate('/start-scraping')
+      onClick: () => navigate('/dashboard/extraction')
     },
     { 
       icon: Download, 
       label: 'Download Data', 
       color: 'text-blue-400',
-      onClick: () => navigate('/dashboard/export')
+      onClick: () => navigate('/dashboard/orders')
     },
     { 
       icon: CreditCard, 
@@ -246,6 +246,20 @@ const DashboardHome = () => {
       onClick: () => navigate('/dashboard/settings')
     },
   ];
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const paginatedActivities = activities.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(activities.length / itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   return (
     <div className="space-y-8">
@@ -417,52 +431,81 @@ const DashboardHome = () => {
               <p className="text-gray-400">No recent activity. Start your first extraction!</p>
               <Button 
                 className="mt-4"
-                onClick={() => navigate('/start-scraping')}
+                onClick={() => navigate('/dashboard/extraction')}
               >
                 Start Extraction
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center justify-between p-4 border border-[#0F0]/20 rounded-lg hover:border-[#0F0]/50 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Activity Icon */}
-                    {activity.type === 'subscription' && (
-                      <CreditCard className="w-5 h-5 text-purple-400" />
-                    )}
-                    {activity.type === 'extraction' && (
-                      <Terminal className="w-5 h-5 text-blue-400" />
-                    )}
-                    {activity.type === 'purchase' && (
-                      <Wallet className="w-5 h-5 text-green-400" />
-                    )}
-                    
-                    {/* Activity Details */}
-                    <div>
-                      <div className="font-medium">{activity.description}</div>
+            <div>
+              <div className="space-y-4">
+                {paginatedActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-4 border border-[#0F0]/20 rounded-lg hover:border-[#0F0]/50 transition-all"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Activity Icon */}
+                      {activity.type === 'subscription' && (
+                        <CreditCard className="w-5 h-5 text-purple-400" />
+                      )}
+                      {activity.type === 'extraction' && (
+                        <Terminal className="w-5 h-5 text-blue-400" />
+                      )}
+                      {activity.type === 'purchase' && (
+                        <Wallet className="w-5 h-5 text-green-400" />
+                      )}
+                      
+                      {/* Activity Details */}
+                      <div>
+                        <div className="font-medium">{activity.description}</div>
+                        <div className="text-sm text-gray-400">
+                          {new Date(activity.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Credits Change */}
+                    <div className="text-right">
+                      <div className={`font-mono ${
+                        activity.credits_change > 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {activity.credits_change > 0 ? '+' : ''}{activity.credits_change.toLocaleString()} credits
+                      </div>
                       <div className="text-sm text-gray-400">
-                        {new Date(activity.created_at).toLocaleString()}
+                        Balance: {activity.credits_after.toLocaleString()}
                       </div>
                     </div>
                   </div>
-
-                  {/* Credits Change */}
-                  <div className="text-right">
-                    <div className={`font-mono ${
-                      activity.credits_change > 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {activity.credits_change > 0 ? '+' : ''}{activity.credits_change.toLocaleString()} credits
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      Balance: {activity.credits_after.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${
+                      currentPage === index + 1 ? "bg-[#0F0]/20" : ""
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
