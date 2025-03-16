@@ -537,16 +537,9 @@ const OrdersHistory = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span
-<<<<<<< HEAD
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          order.status === "completed"
-                            ? "bg-[#0F0]/10 text-[#0F0]"
-                            : order.status === "failed"
-=======
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status_display === "completed"
                           ? "bg-[#0F0]/10 text-[#0F0]"
                           : order.status_display === "failed"
->>>>>>> 54e7e2c0d9999136270e185f8aae1db848c91c0a
                             ? "bg-red-400/10 text-red-400"
                             : "bg-yellow-400/10 text-yellow-400"
                           }`}

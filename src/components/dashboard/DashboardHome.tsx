@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useEffect, useState } from 'react';
+import './MatrixLoader.css';
 
 interface UserActivity {
   id: string;
@@ -33,6 +34,28 @@ interface UserPlan {
   }[];
 }
 
+const MatrixLoader = () => (
+  <div className="matrix-loader">
+    <div className="flex items-center">
+      <div className="spinner mr-2"></div>
+      <div className="wave-text">
+        {'Loading...'.split('').map((letter, index) => (
+          <span
+            key={index}
+            className="wave-letter"
+            style={{
+              animationDelay: `${index * 0.15}s`,
+              display: 'inline-block'
+            }}
+          >
+            {letter}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const DashboardHome = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -49,6 +72,8 @@ const DashboardHome = () => {
 
   useEffect(() => {
     const fetchUserPlan = async () => {
+      setLoading(true); // Set loading state to true when fetching starts
+
       if (!user) return;
       
       try {
@@ -76,7 +101,7 @@ const DashboardHome = () => {
           subscription_start_date: userData.subscription_start_date,
           previous_plans: userData.previous_plans || []
         } as UserPlan);
-        setLoading(false);
+        setLoading(false); // Set loading state to false when fetching ends
       } catch (err) {
         console.error('Error fetching user plan:', err);
         setUserPlan(null);
@@ -112,10 +137,11 @@ const DashboardHome = () => {
   // Fetch user activities
   useEffect(() => {
     const fetchActivities = async () => {
+      setLoadingActivities(true); // Set loading state to true when fetching starts
+
       if (!user) return;
       
       try {
-        setLoadingActivities(true);
         const { data, error } = await supabase
           .from('user_activities')
           .select('*')
@@ -128,7 +154,7 @@ const DashboardHome = () => {
       } catch (err) {
         console.error('Error fetching activities:', err);
       } finally {
-        setLoadingActivities(false);
+        setLoadingActivities(false); // Set loading state to false when fetching ends
       }
     };
 
@@ -263,253 +289,261 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Message */}
-      <div className="mb-8">
-        <GlitchText 
-          text={t('dashboard.welcome', { name: userName })}
-          className="text-4xl font-bold mb-4"
-        />
-        <p className="text-gray-400">{t('dashboard.subtitle')}</p>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {quickActions.map((action, index) => (
-          <Button
-            key={index}
-            variant="secondary"
-            className="h-32 flex flex-col items-center justify-center gap-4 group"
-            onClick={action.onClick}
-          >
-            <action.icon className={`w-8 h-8 ${action.color} group-hover:scale-110 transition-transform`} />
-            <span className="text-sm">{action.label}</span>
-          </Button>
-        ))}
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Credits Usage */}
-        <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 hover:border-[#0F0]/50 transition-all">
-          <h3 className="text-[#0F0] text-lg mb-4">Credits Usage</h3>
-          {loading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-2 bg-[#0F0]/10 rounded"></div>
-              <div className="h-4 bg-[#0F0]/10 rounded w-1/4"></div>
-            </div>
-          ) : (
-            <div className="relative pt-1">
-              <div className="flex mb-2 items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-semibold ${getCreditBarColor(creditPercentage)} bg-opacity-20 px-2 py-0.5 rounded`}>
-                    {creditPercentage.toFixed(0)}%
-                  </span>
-                  <div className="text-sm text-gray-400">
-                    {loading ? (
-                      'Loading...'
-                    ) : userPlan?.included_credits ? (
-                      `${credits.toLocaleString()} / ${userPlan.included_credits.toLocaleString()} credits`
-                    ) : (
-                      `${credits.toLocaleString()} credits available`
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="overflow-hidden h-3 text-xs flex rounded-full bg-[#0F0]/10">
-                <div
-                  style={{ width: `${creditPercentage}%` }}
-                  className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 rounded-full ${getCreditBarColor(creditPercentage)}`}
-                />
-              </div>
-              <div className="mt-4 space-y-2">
-                <p className="text-sm text-[#0F0]">
-                  Current Plan: {loading ? (
-                    <span className="animate-pulse">Loading...</span>
-                  ) : (
-                    <span className="font-semibold">{userPlan?.name || 'Free Plan'}</span>
-                  )}
-                </p>
-                {/* Credit Details */}
-                <div className="mt-4 space-y-3 pt-4 border-t border-[#0F0]/20">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Credit Rate:</span>
-                    <span className="text-[#0F0] font-mono">
-                      ${loading ? '--' : userPlan?.credit_rate.toFixed(3)}/credit
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Minimum Purchase:</span>
-                    <span className="text-[#0F0] font-mono">
-                      {loading ? '--' : userPlan?.min_credits.toLocaleString()} credits
-                    </span>
-                  </div>
-                  {userPlan?.included_credits > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Monthly Credits:</span>
-                      <span className="text-[#0F0] font-mono">
-                        {userPlan.included_credits.toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Available Credits:</span>
-                    <span className="text-[#0F0] font-mono">
-                      {loading ? '--' : credits.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                {/* Subscription Info */}
-                <div className="mt-6 pt-4 border-t border-[#0F0]/20">
-                  <h4 className="text-sm font-semibold text-[#0F0] mb-3">Subscription Details</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Started On:</span>
-                      <span className="text-[#0F0] font-mono">
-                        {loading ? '--' : formatDate(userPlan?.subscription_start_date || '')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Duration:</span>
-                      <span className="text-[#0F0] font-mono">
-                        {loading ? '--' : pluralizeMonths(calculateSubscriptionDuration(userPlan?.subscription_start_date || ''))}
-                      </span>
-                    </div>
-                    {userPlan?.previous_plans?.length > 0 && (
-                      <div className="mt-2">
-                        <div className="text-sm text-gray-400 mb-2">Previous Plans:</div>
-                        <div className="space-y-2">
-                          {userPlan.previous_plans.map((plan, index) => (
-                            <div key={index} className="text-xs text-gray-500">
-                              {formatDate(plan.start_date)} - {formatDate(plan.end_date)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+      {loading || loadingActivities ? (
+        <div className="flex justify-center items-center h-screen">
+          <MatrixLoader />
         </div>
-
-        {/* Recent Activities */}
-        <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 hover:border-[#0F0]/50 transition-all col-span-2">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[#0F0] text-lg">Recent Activity</h3>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="secondary"
-                className="text-sm px-3 py-1.5"
-                onClick={() => setShowOnboarding(true)}
-              >
-                <PlayCircle className="w-4 h-4 mr-1" />
-                Watch Tutorial
-              </Button>
-              <a 
-                href={discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-gray-400 hover:text-[#0F0] transition-all duration-300 group"
-              >
-                <Button variant="secondary" className="text-sm px-3 py-1.5">
-                  <Users className="w-4 h-4 mr-1 group-hover:text-[#0F0] group-hover:animate-pulse transition-all duration-300" />
-                  Community
-                </Button>
-              </a>
-            </div>
+      ) : (
+        <div>
+          {/* Welcome Message */}
+          <div className="mb-8">
+            <GlitchText 
+              text={t('dashboard.welcome', { name: userName })}
+              className="text-4xl font-bold mb-4"
+            />
+            <p className="text-gray-400">{t('dashboard.subtitle')}</p>
           </div>
 
-          {loadingActivities ? (
-            <div className="text-center py-12">
-              <Loader className="w-12 h-12 text-[#0F0] mx-auto mb-4 animate-spin" />
-              <p className="text-gray-400">Loading activities...</p>
-            </div>
-          ) : activities.length === 0 ? (
-            <div className="text-center py-12">
-              <Terminal className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No recent activity. Start your first extraction!</p>
-              <Button 
-                className="mt-4"
-                onClick={() => navigate('/dashboard/extraction')}
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {quickActions.map((action, index) => (
+              <Button
+                key={index}
+                variant="secondary"
+                className="h-32 flex flex-col items-center justify-center gap-4 group"
+                onClick={action.onClick}
               >
-                Start Extraction
+                <action.icon className={`w-8 h-8 ${action.color} group-hover:scale-110 transition-transform`} />
+                <span className="text-sm">{action.label}</span>
               </Button>
-            </div>
-          ) : (
-            <div>
-              <div className="space-y-4">
-                {paginatedActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between p-4 border border-[#0F0]/20 rounded-lg hover:border-[#0F0]/50 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Activity Icon */}
-                      {activity.type === 'subscription' && (
-                        <CreditCard className="w-5 h-5 text-purple-400" />
-                      )}
-                      {activity.type === 'extraction' && (
-                        <Terminal className="w-5 h-5 text-blue-400" />
-                      )}
-                      {activity.type === 'purchase' && (
-                        <Wallet className="w-5 h-5 text-green-400" />
-                      )}
-                      
-                      {/* Activity Details */}
-                      <div>
-                        <div className="font-medium">{activity.description}</div>
-                        <div className="text-sm text-gray-400">
-                          {new Date(activity.created_at).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
+            ))}
+          </div>
 
-                    {/* Credits Change */}
-                    <div className="text-right">
-                      <div className={`font-mono ${
-                        activity.credits_change > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {activity.credits_change > 0 ? '+' : ''}{activity.credits_change.toLocaleString()} credits
-                      </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Credits Usage */}
+            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 hover:border-[#0F0]/50 transition-all">
+              <h3 className="text-[#0F0] text-lg mb-4">Credits Usage</h3>
+              {loading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-2 bg-[#0F0]/10 rounded"></div>
+                  <div className="h-4 bg-[#0F0]/10 rounded w-1/4"></div>
+                </div>
+              ) : (
+                <div className="relative pt-1">
+                  <div className="flex mb-2 items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold ${getCreditBarColor(creditPercentage)} bg-opacity-20 px-2 py-0.5 rounded`}>
+                        {creditPercentage.toFixed(0)}%
+                      </span>
                       <div className="text-sm text-gray-400">
-                        Balance: {activity.credits_after.toLocaleString()}
+                        {loading ? (
+                          'Loading...'
+                        ) : userPlan?.included_credits ? (
+                          `${credits.toLocaleString()} / ${userPlan.included_credits.toLocaleString()} credits`
+                        ) : (
+                          `${credits.toLocaleString()} credits available`
+                        )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-center mt-4">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                {Array.from({ length: totalPages }, (_, index) => (
-                  <button
-                    key={index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                    className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${
-                      currentPage === index + 1 ? "bg-[#0F0]/20" : ""
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+                  <div className="overflow-hidden h-3 text-xs flex rounded-full bg-[#0F0]/10">
+                    <div
+                      style={{ width: `${creditPercentage}%` }}
+                      className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 rounded-full ${getCreditBarColor(creditPercentage)}`}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm text-[#0F0]">
+                      Current Plan: {loading ? (
+                        <span className="animate-pulse">Loading...</span>
+                      ) : (
+                        <span className="font-semibold">{userPlan?.name || 'Free Plan'}</span>
+                      )}
+                    </p>
+                    {/* Credit Details */}
+                    <div className="mt-4 space-y-3 pt-4 border-t border-[#0F0]/20">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Credit Rate:</span>
+                        <span className="text-[#0F0] font-mono">
+                          ${loading ? '--' : userPlan?.credit_rate.toFixed(3)}/credit
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Minimum Purchase:</span>
+                        <span className="text-[#0F0] font-mono">
+                          {loading ? '--' : userPlan?.min_credits.toLocaleString()} credits
+                        </span>
+                      </div>
+                      {userPlan?.included_credits > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Monthly Credits:</span>
+                          <span className="text-[#0F0] font-mono">
+                            {userPlan.included_credits.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Available Credits:</span>
+                        <span className="text-[#0F0] font-mono">
+                          {loading ? '--' : credits.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Subscription Info */}
+                    <div className="mt-6 pt-4 border-t border-[#0F0]/20">
+                      <h4 className="text-sm font-semibold text-[#0F0] mb-3">Subscription Details</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Started On:</span>
+                          <span className="text-[#0F0] font-mono">
+                            {loading ? '--' : formatDate(userPlan?.subscription_start_date || '')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Duration:</span>
+                          <span className="text-[#0F0] font-mono">
+                            {loading ? '--' : pluralizeMonths(calculateSubscriptionDuration(userPlan?.subscription_start_date || ''))}
+                          </span>
+                        </div>
+                        {userPlan?.previous_plans?.length > 0 && (
+                          <div className="mt-2">
+                            <div className="text-sm text-gray-400 mb-2">Previous Plans:</div>
+                            <div className="space-y-2">
+                              {userPlan.previous_plans.map((plan, index) => (
+                                <div key={index} className="text-xs text-gray-500">
+                                  {formatDate(plan.start_date)} - {formatDate(plan.end_date)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Recent Activities */}
+            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6 hover:border-[#0F0]/50 transition-all col-span-2">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-[#0F0] text-lg">Recent Activity</h3>
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="secondary"
+                    className="text-sm px-3 py-1.5"
+                    onClick={() => setShowOnboarding(true)}
+                  >
+                    <PlayCircle className="w-4 h-4 mr-1" />
+                    Watch Tutorial
+                  </Button>
+                  <a 
+                    href={discordUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-gray-400 hover:text-[#0F0] transition-all duration-300 group"
+                  >
+                    <Button variant="secondary" className="text-sm px-3 py-1.5">
+                      <Users className="w-4 h-4 mr-1 group-hover:text-[#0F0] group-hover:animate-pulse transition-all duration-300" />
+                      Community
+                    </Button>
+                  </a>
+                </div>
+              </div>
+
+              {loadingActivities ? (
+                <div className="text-center py-12">
+                  <MatrixLoader />
+                  <p className="text-gray-400">Loading activities...</p>
+                </div>
+              ) : activities.length === 0 ? (
+                <div className="text-center py-12">
+                  <Terminal className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">No recent activity. Start your first extraction!</p>
+                  <Button 
+                    className="mt-4"
+                    onClick={() => navigate('/dashboard/extraction')}
+                  >
+                    Start Extraction
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <div className="space-y-4">
+                    {paginatedActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="flex items-center justify-between p-4 border border-[#0F0]/20 rounded-lg hover:border-[#0F0]/50 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Activity Icon */}
+                          {activity.type === 'subscription' && (
+                            <CreditCard className="w-5 h-5 text-purple-400" />
+                          )}
+                          {activity.type === 'extraction' && (
+                            <Terminal className="w-5 h-5 text-blue-400" />
+                          )}
+                          {activity.type === 'purchase' && (
+                            <Wallet className="w-5 h-5 text-green-400" />
+                          )}
+                          
+                          {/* Activity Details */}
+                          <div>
+                            <div className="font-medium">{activity.description}</div>
+                            <div className="text-sm text-gray-400">
+                              {new Date(activity.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Credits Change */}
+                        <div className="text-right">
+                          <div className={`font-mono ${
+                            activity.credits_change > 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {activity.credits_change > 0 ? '+' : ''}{activity.credits_change.toLocaleString()} credits
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            Balance: {activity.credits_after.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, index) => (
+                      <button
+                        key={index + 1}
+                        onClick={() => handlePageChange(index + 1)}
+                        className={`px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded ${
+                          currentPage === index + 1 ? "bg-[#0F0]/20" : ""
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 mx-1 bg-[#0F0]/10 text-[#0F0] rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
