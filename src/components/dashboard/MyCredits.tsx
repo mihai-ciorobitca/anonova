@@ -5,6 +5,29 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUser } from "../../contexts/UserContext";
+import './MatrixLoader.css';
+
+const MatrixLoader = () => (
+  <div className="matrix-loader">
+    <div className="flex items-center">
+      <div className="spinner mr-2"></div>
+      <div className="wave-text">
+        {'Loading...'.split('').map((letter, index) => (
+          <span
+            key={index}
+            className="wave-letter"
+            style={{
+              animationDelay: `${index * 0.15}s`,
+              display: 'inline-block'
+            }}
+          >
+            {letter}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
 const MyCredits = () => {
   const { t } = useTranslation();
@@ -15,11 +38,13 @@ const MyCredits = () => {
   const [averageCreditsPerMonth, setAverageCreditsPerMonth] = useState<number>(0);
   const [creditsUsedThisMonth, setCreditsUsedThisMonth] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
   const ABSOLUTE_MINIMUM_CREDITS = 500;
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setLoading(true);
       if (!user) return;
 
       try {
@@ -45,6 +70,8 @@ const MyCredits = () => {
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -148,10 +175,8 @@ const MyCredits = () => {
 
   return (
     <div className="space-y-8">
-      {isLoading ? (
-        <div className="flex justify-center items-center h-screen">
-          <div className="matrix-loader">Loading...</div>
-        </div>
+      {loading ? (
+        <MatrixLoader />
       ) : (
         <div className="space-y-8">
           <div className="mb-8">
