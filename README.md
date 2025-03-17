@@ -9,9 +9,9 @@ Anonova is a powerful web application for extracting and analyzing data from var
 ### Core Extraction Capabilities
 - **Multi-Platform Support**
   - Instagram (Followers, Following, Hashtags)
-  - LinkedIn (Professional Profiles)
-  - Twitter/X (Emails, Engagement)
-  - Facebook (Profiles, Groups)
+  - <span style="color:gray">LinkedIn (Professional Profiles)</span> <span style="color:red">Coming Soon</span>
+  - <span style="color:gray">Twitter/X (Emails, Engagement)</span> <span style="color:red">Coming Soon</span>
+  - <span style="color:gray">Facebook (Profiles, Groups)</span> <span style="color:red">Coming Soon</span>
 
 ### Advanced Security
 - 🛡️ Military-grade encryption (AES-256)
@@ -75,38 +75,38 @@ Anonova is a powerful web application for extracting and analyzing data from var
 ## 💻 Installation
 
 1. Clone the repository:
-\`\`\`bash
+```bash
 git clone https://github.com/yourusername/anonova.git
 cd anonova
-\`\`\`
+```
 
 2. Install dependencies:
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 3. Set up environment variables:
-\`\`\`bash
+```bash
 cp .env.example .env
-\`\`\`
+```
 
 4. Configure your environment variables:
-\`\`\`env
+```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
-\`\`\`
+```
 
 5. Start the development server:
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 ## 📦 Available Scripts
 
-- \`npm run dev\`: Start development server
-- \`npm run build\`: Build for production
-- \`npm run preview\`: Preview production build
-- \`npm run lint\`: Run ESLint
+- `npm run dev`: Start development server
+- `npm run build`: Build for production
+- `npm run preview`: Preview production build
+- `npm run lint`: Run ESLint
 
 ## 🌟 Pricing Plans
 
@@ -158,9 +158,9 @@ npm run dev
 Anonova provides integration with multiple data sources:
 
 - Instagram API integration
-- LinkedIn API integration
-- Twitter/X API integration
-- Facebook API integration
+- <span style="color:gray">LinkedIn API integration</span> <span style="color:red">Coming Soon</span>
+- <span style="color:gray">Twitter/X API integration</span> <span style="color:red">Coming Soon</span>
+- <span style="color:gray">Facebook API integration</span> <span style="color:red">Coming Soon</span>
 
 ## 🔄 Credit System
 
@@ -211,4 +211,4 @@ This tool is intended for legitimate data collection purposes only. Users are re
 
 For more information, visit [anonova.ai](https://anonova.ai)
 
-© 2024 Anonova. All rights reserved.
+ 2024 Anonova. All rights reserved.
