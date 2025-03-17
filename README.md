@@ -9,9 +9,9 @@ Anonova is a powerful web application for extracting and analyzing data from var
 ### Core Extraction Capabilities
 - **Multi-Platform Support**
   - Instagram (Followers, Following, Hashtags)
-  - <span style="color:gray">LinkedIn (Professional Profiles)</span> <span style="color:red">Coming Soon</span>
-  - <span style="color:gray">Twitter/X (Emails, Engagement)</span> <span style="color:red">Coming Soon</span>
-  - <span style="color:gray">Facebook (Profiles, Groups)</span> <span style="color:red">Coming Soon</span>
+  - *LinkedIn (Professional Profiles)* **Coming Soon**
+  - *Twitter/X (Emails, Engagement)* **Coming Soon**
+  - *Facebook (Profiles, Groups)* **Coming Soon**
 
 ### Advanced Security
 - 🛡️ Military-grade encryption (AES-256)
@@ -158,9 +158,9 @@ npm run dev
 Anonova provides integration with multiple data sources:
 
 - Instagram API integration
-- <span style="color:gray">LinkedIn API integration</span> <span style="color:red">Coming Soon</span>
-- <span style="color:gray">Twitter/X API integration</span> <span style="color:red">Coming Soon</span>
-- <span style="color:gray">Facebook API integration</span> <span style="color:red">Coming Soon</span>
+- *LinkedIn API integration* **Coming Soon**
+- *Twitter/X API integration* **Coming Soon**
+- *Facebook API integration* **Coming Soon**
 
 ## 🔄 Credit System
 
