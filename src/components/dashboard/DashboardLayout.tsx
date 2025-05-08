@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Terminal, CreditCard, History, Download, Settings, Users, Wallet, Home, HelpCircle, LogOut, User, MessageSquare, Menu, ChevronRight, Zap } from 'lucide-react';
+import { Terminal, CreditCard, History, Download, Settings, Users, Wallet, Home, HelpCircle, LogOut, User, MessageSquare, Menu, ChevronRight, Zap, ShieldCheck  } from 'lucide-react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import MatrixBackground from '../MatrixBackground';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,6 +22,7 @@ const DashboardLayout = () => {
   
   const navigation = [
     { name: t('dashboard.overview'), path: '/dashboard', icon: Terminal },
+    { name: t('dashboard.checker'), path: '/dashboard/checker', icon: ShieldCheck },
     { name: t('dashboard.extraction'), path: '/dashboard/extraction', icon: Zap },
     { name: t('dashboard.orders'), path: '/dashboard/orders', icon: History },
     { name: t('dashboard.subscription'), path: '/dashboard/subscription', icon: CreditCard },

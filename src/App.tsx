@@ -8,6 +8,7 @@ import {
 import DashboardLayout from "./components/dashboard/DashboardLayout";
 import DashboardHome from "./components/dashboard/DashboardHome";
 import ExtractionPage from "./components/dashboard/ExtractionPage";
+import CheckerPage from "./components/dashboard/CheckerPage";
 import OrdersHistory from "./components/dashboard/OrdersHistory";
 import MySubscription from "./components/dashboard/MySubscription";
 import MyCredits from "./components/dashboard/MyCredits";
@@ -96,6 +97,7 @@ function App() {
           >
             <Route index element={<DashboardHome />} />
             <Route path="extraction" element={<ExtractionPage />} />
+            <Route path="checker" element={<CheckerPage />} />
             <Route path="orders" element={<OrdersHistory />} />
             <Route path="subscription" element={<MySubscription />} />
             <Route path="credits" element={<MyCredits />} />
