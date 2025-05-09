@@ -133,7 +133,7 @@ const CheckerPage = () => {
             className="hidden"
             id="csvInput"
           />
-          <label htmlFor="csvInput" className="cursor-pointer bg-gray-700 text-white px-4 py-2 rounded">Upload</label>
+          <Button as="label" htmlFor="csvInput">Upload</Button>
           <Button variant="success" onClick={handleDownload}>Download</Button>
         </div>
       </div>
@@ -141,55 +141,69 @@ const CheckerPage = () => {
       {/* Table or Cards */}
       {!isMobile ? (
         <div className="overflow-y-auto max-h-[calc(100vh-180px)]">
-          <table className="min-w-full bg-[#121212] text-white shadow rounded table-auto">
+          <table className="min-w-full bg-[#121212] text-white shadow-lg rounded-lg table-fixed border-separate border-spacing-y-2">
             <thead className="sticky top-0 bg-[#1a1a1a] z-10">
-              <tr className="text-center font-semibold border-b border-gray-700">
-                <th>Delete</th>
-                <th>Phone</th>
-                <th>Link</th>
-                <th>Check</th>
-                <th>Category</th>
+              <tr className="text-center font-semibold text-sm text-gray-300">
+                <th className="px-4 py-2">Phone</th>
+                <th className="px-4 py-2">Link</th>
+                <th className="px-4 py-2">Check</th>
+                <th className="px-4 py-2">Category</th>
+                <th className="px-4 py-2">Delete</th>
               </tr>
             </thead>
             <tbody>
               {tableData.map((data, index) => (
-                <tr key={index} className="text-center border-t border-gray-800">
-                  <td>
-                    <Button variant="destructive" onClick={() => removeRow(index)}>Remove</Button>
-                  </td>
-                  <td>
-                    <Button variant="success" onClick={() => copyToClipboard(data.phone)}>
+                <tr
+                  key={index}
+                  className="text-center bg-[#1c1c1c] hover:bg-[#2a2a2a] transition rounded-lg"
+                >
+                  <td className="px-4 py-3">
+                    <Button
+                      variant="success"
+                      onClick={() => copyToClipboard(data.phone)}
+                    >
                       {data.phone}
                     </Button>
                   </td>
-                  <td>
-                    <Button variant="secondary" onClick={() => openInstagramProfile(data.url)}>
+                  <td className="px-4 py-3">
+                    <Button
+                      variant="secondary"
+                      onClick={() => openInstagramProfile(data.url)}
+                    >
                       {data.url}
                     </Button>
                   </td>
-                  <td>
-                    <input
+                  <td className="px-4 py-3">
+                    <input 
                       type="checkbox"
                       checked={data.checked}
                       onChange={(e) => updateRow(index, { checked: e.target.checked })}
                     />
                   </td>
-                  <td>
+                  <td className="px-4 py-3">
                     <select
                       value={data.category}
                       onChange={(e) => updateRow(index, { category: e.target.value })}
-                      className="form-select rounded border border-gray-600 bg-black text-white"
+                      className="px-3 py-2 rounded border border-gray-700 bg-black text-white w-full"
                     >
                       <option value="">Select</option>
                       {options.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Button variant="destructive" onClick={() => removeRow(index)}>
+                      Remove
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
         </div>
       ) : (
         <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-180px)]">
@@ -216,7 +230,7 @@ const CheckerPage = () => {
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
-                <Button variant="destructive" onClick={() => removeRow(index)}>Remove</Button>
+                <Button onClick={() => removeRow(index)}>Remove</Button>
               </div>
             </div>
           ))}
