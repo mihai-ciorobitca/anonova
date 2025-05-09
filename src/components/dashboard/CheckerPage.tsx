@@ -1,839 +1,227 @@
-import React, { useState } from "react";
-import {
-  Search,
-  Users,
-  Hash,
-  Terminal,
-  Zap,
-  Database,
-  AlertCircle,
-  Loader,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Shield,
-  Check,
-  Lock,
-  Globe,
-} from "lucide-react";
+import React, { useEffect, useState, ChangeEvent } from "react";
 import Button from "../Button";
-import GlitchText from "../GlitchText";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import LegalNotices from "../LegalNotices";
-import { useUser } from "../../contexts/UserContext";
-import { useTranslation } from "react-i18next";
-import { runLinkedInExtraction } from "../../lib/linkedInApify.ts";
-import { runAnonovaExtraction } from "../../lib/anonova";
-import { supabase } from "../../lib/supabase.ts";
-import { ApifyExtractedData } from "../../lib/apify.ts";
 
-type Platform = "instagram" | "linkedin" | "facebook" | "twitter";
-
-const platforms = [
-  {
-    id: "instagram" as Platform,
-    name: "Instagram",
-    icon: Instagram,
-    color: "text-pink-500",
-    description: "Extract data from Instagram profiles and hashtags",
-    features: [
-      "Profile Details & Metrics",
-      "Followers & Following Data",
-      "Business & Contact Info",
-      "Hashtag Analytics",
-    ],
-  },
-  {
-    id: "linkedin" as Platform,
-    name: "LinkedIn",
-    icon: Linkedin,
-    color: "text-blue-500",
-    description: "Extract professional network data",
-    features: [
-      "Professional Profile Info (username, profile link)",
-      "Contact Details (email, phone)",
-      "Lead & Summary Insights",
-    ],
-  },
-  {
-    id: "facebook" as Platform,
-    name: "Facebook",
-    icon: Facebook,
-    color: "text-blue-600",
-    description: "Extract Facebook profiles and groups",
-    features: ["Profile friends", "Group members", "Page followers"],
-  },
-  {
-    id: "twitter" as Platform,
-    name: "X/Twitter",
-    icon: Twitter,
-    color: "text-gray-200",
-    description: "Extract Twitter followers and engagement",
-    features: ["Profile followers", "Tweet engagement", "Hashtag analysis"],
-  },
-];
-
-interface ExtractionConfig {
-  isHashtagMode: boolean;
-  profileUrl: string;
-  hashtag: string;
-  state?: string;
-  country: string;
-  language: string;
-  maxResults: number;
-  maxLeadsPerInput: number;
-  extractFollowers: boolean;
-  extractFollowing: boolean;
-  platform: Platform;
-}
-
-interface ExtractionResult {
-  status: "completed" | "failed";
-  data: any;
-  error?: string;
+interface RowData {
+  phone: string;
+  url: string;
+  checked: boolean;
+  category: string;
 }
 
 const CheckerPage = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { credits, hasUsedFreeCredits, updateUserCredits } = useUser();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [extractionResult, setExtractionResult] =
-    useState<ExtractionResult | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [tableData, setTableData] = useState<RowData[]>([]);
+  const [options, setOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState("");
+  const [fileName, setFileName] = useState("");
 
-  const [extractionConfig, setExtractionConfig] = useState<ExtractionConfig>({
-    isHashtagMode: false,
-    profileUrl: "",
-    hashtag: "",
-    state: "",
-    country: "us",
-    language: "en",
-    maxResults: 100000000,
-    maxLeadsPerInput: 100,
-    extractFollowers: false,
-    extractFollowing: false,
-    platform: "instagram",
-  });
+  useEffect(() => {
+    const savedData = localStorage.getItem("tableData");
+    const savedOptions = localStorage.getItem("options");
+    if (savedData) setTableData(JSON.parse(savedData));
+    if (savedOptions) setOptions(JSON.parse(savedOptions));
+  }, []);
 
-  const handleStartExtraction = async () => {
-    // Validate source/target
-    const source = extractionConfig.hashtag.trim();
-    if (!source) {
-      setError("Please enter a target (hashtag or profile)");
-      return;
-    }
+  useEffect(() => {
+    localStorage.setItem("tableData", JSON.stringify(tableData));
+  }, [tableData]);
 
-    // Validate leads count
-    if (
-      !extractionConfig.maxLeadsPerInput ||
-      extractionConfig.maxLeadsPerInput < 10
-    ) {
-      setError("Please specify at least 100 leads to extract");
-      return;
-    }
+  useEffect(() => {
+    localStorage.setItem("options", JSON.stringify(options));
+  }, [options]);
 
-    // For Instagram, validate collection type
-    if (
-      extractionConfig.platform === "instagram" &&
-      !extractionConfig.isHashtagMode &&
-      !extractionConfig.extractFollowers &&
-      !extractionConfig.extractFollowing
-    ) {
-      setError("Please select a collection type (HT, FL, or FO)");
-      return;
-    }
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    if (!agreedToTerms) {
-      setError("Please agree to the terms and conditions");
-      return;
-    }
-
-    setIsExtracting(true);
-    setError("");
-    setExtractionResult(null);
-
-    // Early validation
-    if (!extractionConfig.hashtag.trim()) {
-      setError("Please enter a target (hashtag or profile)");
-      return;
-    }
-
-    try {
-      let results;
-
-      // Use runAnonovaExtraction for Instagram
-      const taskType = "HT";
-
-      if (extractionConfig.platform === "linkedin") {
-        // Use runApifyExtraction for LinkedIn
-        results = await runLinkedInExtraction({
-          taskSource: source,
-          taskType: taskType,
-          country: extractionConfig.country,
-          language: extractionConfig.language,
-          maxLeads: extractionConfig.maxLeadsPerInput,
-          action: "create",
-        });
-
-        setExtractionResult({
-          status: "completed",
-          data: results,
-          error: "none",
-        });
-
-        try {
-          // Save linkedin order to Supabase order table
-          const { error: ordersError } = await supabase.from("orders").insert({
-            user_id: user.id,
-            source_type: taskType,
-            results_id: results.id,
-            status_display: results.status,
-            source: source,
-            max_leads: extractionConfig.maxLeadsPerInput,
-            platform: extractionConfig.platform,
-          });
-
-          if (ordersError) throw ordersError;
-
-          setExtractionResult({
-            status: results.status || "In the queue",
-            data: results,
-            error: "none",
-          });
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-          // Handle specific database errors
-          if (dbError.message?.includes("Minimum credits required")) {
-            throw new Error(
-              hasUsedFreeCredits
-                ? "Minimum 100 credits required for extraction."
-                : "Minimum 1 credit required for first extraction."
-            );
-          } else if (dbError.message?.includes("Service temporarily unavailable")) {
-            throw new Error(
-              "The extraction service is currently unavailable. Please try again later or contact support."
-            );
-          } else if (dbError.message?.includes("No results found")) {
-            throw new Error(
-              "No results found. Try adjusting your search terms or using a different profile/hashtag."
-            );
-          } else if (dbError.message?.includes("Insufficient credits")) {
-            throw new Error(
-              "Not enough credits available. Please purchase more credits to continue."
-            );
-          } else if (dbError.message?.includes("Invalid response format")) {
-            throw new Error("Received invalid data from server. Please try again.");
-          } else if (dbError.message?.includes("Please enter a valid target")) {
-            throw new Error("Please enter a valid target.");
-          } else {
-            throw new Error("Failed to save order. Please try again.");
-          }
-        }
-      } else if (extractionConfig.platform === "instagram") {
-        results = await runAnonovaExtraction({
-          taskSource: source,
-          taskType,
-          maxLeads: extractionConfig.maxLeadsPerInput,
-          action: "create",
-        });
-
-        try {
-          // Save instagram order to Supabase isntagram order table
-          const { data: orderData, error: orderError } = await supabase.rpc(
-            "handle_instagram_order",
-            {
-              source_type: taskType,
-              source: source,
-              max_leads: extractionConfig.maxLeadsPerInput,
-              settings: {},
-            }
-          );
-
-          if (orderError) throw orderError;
-
-          if (orderData) {
-            setOrderId(orderData);
-          }
-
-          // Save instagram order to Supabase order table
-          const { error: ordersError } = await supabase.from("orders").insert({
-            user_id: user.id,
-            source_type: taskType,
-            results_id: results.id,
-            status_display: results.status_display,
-            source: source,
-            max_leads: results.max_leads,
-          });
-
-          if (ordersError) throw ordersError;
-
-          setExtractionResult({
-            status: results.status_display || "In the queue",
-            data: results,
-            error: "none",
-          });
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-          // Handle specific database errors
-          if (dbError.message?.includes("Minimum credits required")) {
-            throw new Error(
-              hasUsedFreeCredits
-                ? "Minimum 100 credits required for extraction."
-                : "Minimum 1 credit required for first extraction."
-            );
-          } else if (dbError.message?.includes("Insufficient credits")) {
-            throw new Error(
-              "Not enough credits available. Please purchase more credits to continue."
-            );
-          } else if (dbError.message?.includes("Source is required")) {
-            throw new Error("Please enter a valid target.");
-          } else {
-            throw new Error("Failed to save order. Please try again.");
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error("Extraction error:", err);
-
-      let errorMessage;
-
-      if (err.message?.includes("Minimum credits required")) {
-        errorMessage = hasUsedFreeCredits
-          ? "Minimum 100 credits required for extraction."
-          : "Minimum 1 credit required for first extraction.";
-      } else if (err.message?.includes("Service temporarily unavailable")) {
-        errorMessage =
-          "The extraction service is currently unavailable. Please try again later or contact support.";
-      } else if (err.message?.includes("No results found")) {
-        errorMessage =
-          "No results found. Try adjusting your search terms or using a different profile/hashtag.";
-      } else if (err.message?.includes("Insufficient credits")) {
-        errorMessage =
-          "Not enough credits available. Please purchase more credits to continue.";
-      } else if (err.message?.includes("Invalid response format")) {
-        errorMessage = "Received invalid data from server. Please try again.";
-      } else if (err.message?.includes("Please enter a valid target")) {
-        errorMessage = "Please enter a valid target.";
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      } else {
-        errorMessage = "Failed to extract data. Please try again later.";
-      }
-
-      setExtractionResult({
-        status: "failed",
-        data: [],
-        error: errorMessage,
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(Boolean);
+      const parsed = lines.map((line) => {
+        const [phone, url] = line.split(",");
+        return { phone, url, checked: false, category: "" };
       });
-    } finally {
-      setIsExtracting(false);
+      setTableData(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDownload = () => {
+    const csv = tableData
+      .filter((row) => row.checked)
+      .map((row) => `${row.phone},${row.url}`)
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "download.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleAddOption = () => {
+    if (newOption && !options.includes(newOption)) {
+      setOptions([...options, newOption]);
+      setNewOption("");
+    } else {
+      alert("Please enter a unique option.");
     }
   };
 
-  // Order ID message
-  const orderMessage = orderId ? (
-    <div className="mt-4 p-4 bg-[#0F0]/10 border border-[#0F0]/20 rounded-lg">
-      <p className="text-[#0F0] flex items-center gap-2">
-        <Check className="w-5 h-5" />
-        Created Order with order id {orderId}. Please check Order tab for
-        progress.
-      </p>
-    </div>
-  ) : null;
+  const handleRemoveOption = () => {
+    if (options.includes(newOption)) {
+      setOptions(options.filter((opt) => opt !== newOption));
+      setNewOption("");
+    } else {
+      alert("Option not found.");
+    }
+  };
+
+  const removeRow = (index: number) => {
+    const updated = [...tableData];
+    updated.splice(index, 1);
+    setTableData(updated);
+  };
+
+  const updateRow = (index: number, updates: Partial<RowData>) => {
+    const updated = [...tableData];
+    updated[index] = { ...updated[index], ...updates };
+    setTableData(updated);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+  };
+
+  const openInstagramProfile = (url: string) => {
+    const fullUrl = url.startsWith("https://www.instagram.com/")
+      ? url
+      : `https://www.instagram.com/${url}`;
+    window.open(fullUrl, "_blank");
+  };
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
-    <div className="space-y-8">
-      <div className="mb-8">
-        <GlitchText
-          text="Start New Extraction"
-          className="text-4xl font-bold mb-4"
-        />
-        <p className="text-gray-400">
-          Configure your extraction settings and start gathering data
-        </p>
+    <div className="min-h-screen bg-black text-white p-4 space-y-4">
+      {/* Controls */}
+      <div className="bg-[#1a1a1a] sticky top-0 z-50 p-4 rounded-lg flex flex-col md:flex-row justify-between gap-4">
+        <div className="flex gap-2 flex-grow">
+          <input
+            type="text"
+            placeholder="Write here the option..."
+            value={newOption}
+            onChange={(e) => setNewOption(e.target.value)}
+            className="px-4 py-2 rounded border border-gray-600 bg-black text-white flex-grow"
+          />
+          <Button variant="primary" onClick={handleAddOption}>Add</Button>
+          <Button variant="destructive" onClick={handleRemoveOption}>Remove</Button>
+        </div>
+        <div className="flex gap-2 flex-grow">
+          <input
+            type="text"
+            placeholder="Write filename here..."
+            value={fileName}
+            onChange={(e) => setFileName(e.target.value)}
+            className="px-4 py-2 rounded border border-gray-600 bg-black text-white flex-grow"
+          />
+          <input
+            type="file"
+            onChange={handleFileUpload}
+            accept=".csv"
+            className="hidden"
+            id="csvInput"
+          />
+          <label htmlFor="csvInput" className="cursor-pointer bg-gray-700 text-white px-4 py-2 rounded">Upload</label>
+          <Button variant="success" onClick={handleDownload}>Download</Button>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12">
-        {/* Extraction Form */}
-        <div className="space-y-6">
-          <div className="relative bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
-            <div className="space-y-6">
-              {/* Platform Selection */}
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Select Platform
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {platforms.map((platform) => (
-                    <button
-                      key={platform.id}
-                      onClick={() =>
-                        setExtractionConfig((prev) => ({
-                          ...prev,
-                          platform: platform.id,
-                        }))
-                      }
-                      className={`flex flex-col items-center gap-3 p-4 rounded-lg border transition-all ${
-                        extractionConfig.platform === platform.id
-                          ? "border-[#0F0] bg-[#0F0]/10"
-                          : platform.id !== "instagram" ? "border-gray-700 cursor-not-allowed opacity-50" : ""
-                      }`}
-                      disabled={platform.id !== "instagram"}
+      {/* Table or Cards */}
+      {!isMobile ? (
+        <div className="overflow-y-auto max-h-[calc(100vh-180px)]">
+          <table className="min-w-full bg-[#121212] text-white shadow rounded table-auto">
+            <thead className="sticky top-0 bg-[#1a1a1a] z-10">
+              <tr className="text-center font-semibold border-b border-gray-700">
+                <th>Delete</th>
+                <th>Phone</th>
+                <th>Link</th>
+                <th>Check</th>
+                <th>Category</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.map((data, index) => (
+                <tr key={index} className="text-center border-t border-gray-800">
+                  <td>
+                    <Button variant="destructive" onClick={() => removeRow(index)}>Remove</Button>
+                  </td>
+                  <td>
+                    <Button variant="success" onClick={() => copyToClipboard(data.phone)}>
+                      {data.phone}
+                    </Button>
+                  </td>
+                  <td>
+                    <Button variant="secondary" onClick={() => openInstagramProfile(data.url)}>
+                      {data.url}
+                    </Button>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={data.checked}
+                      onChange={(e) => updateRow(index, { checked: e.target.checked })}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={data.category}
+                      onChange={(e) => updateRow(index, { category: e.target.value })}
+                      className="form-select rounded border border-gray-600 bg-black text-white"
                     >
-                      <platform.icon className={`w-8 h-8 ${platform.color}`} />
-                      <span className="text-sm font-medium">
-                        {platform.name}
-                      </span>
-                      {platform.id !== "instagram" && (
-                        <span className="text-xs text-red-500 mt-1">Coming Soon</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 p-4 border border-[#0F0]/20 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Terminal className="w-4 h-4 text-[#0F0]" />
-                    <span className="text-sm text-[#0F0]">
-                      Platform Features
-                    </span>
-                  </div>
-                  <ul className="space-y-1">
-                    {platforms
-                      .find((p) => p.id === extractionConfig.platform)
-                      ?.features.map((feature, index) => (
-                        <li
-                          key={index}
-                          className="text-sm text-gray-400 flex items-center gap-2"
-                        >
-                          <div className="w-1 h-1 bg-[#0F0] rounded-full" />
-                          {feature}
-                        </li>
+                      <option value="">Select</option>
+                      {options.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
                       ))}
-                  </ul>
-                </div>
-                {/* Collection Type - Hide for LinkedIn */}
-                {extractionConfig.platform !== "linkedin" && (
-                  <div className="mt-6">
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Collection Type
-                    </label>
-                    <div className="grid grid-cols-3 gap-4">
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: true,
-                            extractFollowers: false,
-                            extractFollowing: false,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          extractionConfig.isHashtagMode
-                            ? "border-[#0F0] bg-[#0F0]/10"
-                            : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Hash className="w-4 h-4" />
-                        <span>HT</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: false,
-                            extractFollowers: true,
-                            extractFollowing: false,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          !extractionConfig.isHashtagMode &&
-                          extractionConfig.extractFollowers
-                            ? "border-[#0F0] bg-[#0F0]/10"
-                            : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>FL</span>
-                      </button>
-                      <button
-                        onClick={() =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            isHashtagMode: false,
-                            extractFollowers: false,
-                            extractFollowing: true,
-                          }))
-                        }
-                        className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
-                          !extractionConfig.isHashtagMode &&
-                          extractionConfig.extractFollowing
-                            ? "border-[#0F0] bg-[#0F0]/10"
-                            : "border-gray-700 hover:border-[#0F0]/50"
-                        }`}
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>FO</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Target
-                </label>
-                <input
-                  type="text"
-                  value={extractionConfig.hashtag}
-                  onChange={(e) =>
-                    setExtractionConfig((prev) => ({
-                      ...prev,
-                      hashtag: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                  placeholder="Enter a Hashtag"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">
-                  Max Leads per Input
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={extractionConfig.maxLeadsPerInput}
-                    onChange={(e) =>
-                      setExtractionConfig((prev) => ({
-                        ...prev,
-                        maxLeadsPerInput: parseInt(e.target.value) || 10,
-                      }))
-                    }
-                    min={10}
-                    max={extractionConfig.maxResults}
-                    className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    placeholder="10"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    leads
-                  </div>
-                </div>
-              </div>
-
-              {/* Domain Input - Only for Twitter & Facebook */}
-              {["twitter", "facebook"].includes(extractionConfig.platform) &&
-                !(
-                  extractionConfig.platform === "facebook" &&
-                  extractionConfig.facebookScrapeType
-                ) && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Domains
-                    </label>
-
-                    {/* Ensure at least one input box is always shown */}
-                    {(extractionConfig.domain?.length
-                      ? extractionConfig.domain
-                      : [""]
-                    ).map((d, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center space-x-2 mb-2"
-                      >
-                        <input
-                          type="text"
-                          value={d}
-                          onChange={(e) => {
-                            const newDomains = [
-                              ...(extractionConfig.domain || []),
-                            ]; // Ensure it's an array
-                            newDomains[index] = e.target.value;
-                            setExtractionConfig((prev) => ({
-                              ...prev,
-                              domain: newDomains,
-                            }));
-                          }}
-                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                          placeholder="Enter domain (e.g., gmail.com)"
-                        />
-
-                        {/* Add Button (Only on first input) */}
-                        {index === 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExtractionConfig((prev) => ({
-                                ...prev,
-                                domain: [...(prev.domain || []), ""], // Add a new empty input field
-                              }))
-                            }
-                            className="bg-[#0F0] text-black px-3 py-2 rounded-lg text-lg"
-                          >
-                            +
-                          </button>
-                        )}
-
-                        {/* Remove Button (Only if more than one input field exists) */}
-                        {index > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExtractionConfig((prev) => ({
-                                ...prev,
-                                domain:
-                                  prev.domain?.filter((_, i) => i !== index) ||
-                                  [],
-                              }))
-                            }
-                            className="bg-red-500 px-3 py-2 text-white rounded-lg"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              {/* Max Leads Input - Works for Twitter & Facebook */}
-              {["instagram", "linkedin", "twitter", "facebook"].includes(
-                extractionConfig.platform
-              ) &&
-                !(
-                  extractionConfig.platform === "facebook" &&
-                  extractionConfig.facebookScrapeType
-                ) && (
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      {extractionConfig.platform === "twitter"
-                        ? "Maximum Results"
-                        : "Max Leads per Input"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={extractionConfig.maxLeadsPerInput || ""}
-                        onChange={(e) =>
-                          setExtractionConfig((prev) => ({
-                            ...prev,
-                            maxLeadsPerInput: Math.max(
-                              100,
-                              parseInt(e.target.value) || 100
-                            ), // Ensure minimum of 100
-                          }))
-                        }
-                        min="10"
-                        max="1000"
-                        className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                        placeholder="10"
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                        leads
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Minimum 100 leads required per extraction
-                    </p>
-                  </div>
-                )}
-
-              {/* LinkedIn-specific fields */}
-              {extractionConfig.platform === "linkedin" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Country
-                    </label>
-                    <select
-                      value={extractionConfig.country}
-                      onChange={(e) =>
-                        setExtractionConfig((prev) => ({
-                          ...prev,
-                          country: e.target.value,
-                        }))
-                      }
-                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    >
-                      <option value="us">United States</option>
-                      <option value="gb">United Kingdom</option>
-                      <option value="ca">Canada</option>
-                      <option value="au">Australia</option>
-                      <option value="de">Germany</option>
-                      <option value="fr">France</option>
-                      <option value="es">Spain</option>
-                      <option value="it">Italy</option>
-                      <option value="nl">Netherlands</option>
-                      <option value="se">Sweden</option>
                     </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Language
-                    </label>
-                    <select
-                      value={extractionConfig.language}
-                      onChange={(e) =>
-                        setExtractionConfig((prev) => ({
-                          ...prev,
-                          language: e.target.value,
-                        }))
-                      }
-                      className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                    >
-                      <option value="en">English</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
-                      <option value="de">German</option>
-                      <option value="it">Italian</option>
-                      <option value="nl">Dutch</option>
-                      <option value="sv">Swedish</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                className="w-full"
-                onClick={handleStartExtraction}
-                disabled={
-                  isExtracting ||
-                  (!extractionConfig.hashtag && !extractionConfig.profileUrl) ||
-                  !agreedToTerms
-                }
-              >
-                {isExtracting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader className="w-5 h-5 animate-spin" />
-                    EXTRACTING_DATA.exe
-                  </span>
-                ) : (
-                  "START_EXTRACTION.exe"
-                )}
-              </Button>
-
-              {/* Order ID Message */}
-              {orderMessage}
-
-              {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  {error}
-                </div>
-              )}
-
-              {/* Legal Notices */}
-              <LegalNotices
-                type="extraction"
-                checked={agreedToTerms}
-                onChange={setAgreedToTerms}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="space-y-8">
-          <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
-            <h3 className="text-xl font-bold text-[#0F0] mb-6">
-              Extraction Features
-            </h3>
-            <div className="space-y-6">
-              {[
-                {
-                  icon: Zap,
-                  title: "Lightning Fast Extraction",
-                  description:
-                    "Extract thousands of profiles in minutes with our optimized algorithms.",
-                  color: "text-yellow-400",
-                },
-                {
-                  icon: Database,
-                  title: "Ghost Mode Scraping",
-                  description:
-                    "Undetectable extraction methods ensure your activities remain completely private.",
-                  color: "text-purple-400",
-                },
-                {
-                  icon: Globe,
-                  title: "Global Proxy Network",
-                  description:
-                    "Automatic IP rotation across worldwide servers prevents rate limiting.",
-                  color: "text-blue-400",
-                },
-              ].map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-4 p-4 border border-[#0F0]/20 rounded-lg hover:border-[#0F0]/50 transition-all group"
-                >
-                  <feature.icon
-                    className={`w-8 h-8 ${feature.color} transform group-hover:scale-110 transition-transform`}
-                  />
-                  <div>
-                    <h4 className="font-semibold mb-1">{feature.title}</h4>
-                    <p className="text-gray-400 text-sm">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
-
-          <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
-            <h3 className="text-xl font-bold text-[#0F0] mb-6">
-              Security Features
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-[#0F0]" />
-                <span>Ghost mode extraction for undetectable operation</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Lock className="w-5 h-5 text-[#0F0]" />
-                <span>Military-grade encryption (AES-256)</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-[#0F0]" />
-                <span>Automatic IP rotation across global proxy network</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-[#0F0]" />
-                <span>Smart rate limiting to prevent detection</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Results Table */}
-          {extractionResult && (
-            <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
-              <h3 className="text-xl font-bold text-[#0F0] mb-4">
-                Extraction Results
-              </h3>
-
-              {extractionResult.status === "failed" ? (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-500">
-                  {extractionResult.error}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  Successfully created order. Results are in orders.
-                </div>
-              )}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-180px)]">
+          {tableData.map((data, index) => (
+            <div key={index} className="bg-[#121212] text-white shadow rounded p-4 space-y-2">
+              <div className="text-lg font-bold">{data.phone}</div>
+              <div className="space-x-2">
+                <Button variant="success" onClick={() => copyToClipboard(data.phone)}>Copy</Button>
+                <Button variant="secondary" onClick={() => openInstagramProfile(data.url)}>Link</Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={data.checked}
+                  onChange={(e) => updateRow(index, { checked: e.target.checked })}
+                />
+                <select
+                  value={data.category}
+                  onChange={(e) => updateRow(index, { category: e.target.value })}
+                  className="form-select rounded border border-gray-600 bg-black text-white"
+                >
+                  <option value="">Select</option>
+                  {options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <Button variant="destructive" onClick={() => removeRow(index)}>Remove</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
