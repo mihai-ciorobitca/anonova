@@ -36,35 +36,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
+      console.log('[Auth] Initializing auth...');
 
       const {
         data: { session },
         error
       } = await supabase.auth.getSession();
 
-      // Optionally fetch user directly to ensure freshness
       const {
         data: userData,
         error: userError
       } = await supabase.auth.getUser();
 
+      console.log('[Auth] Session:', session);
+      console.log('[Auth] User from getUser:', userData?.user);
+
       const currentUser = session?.user ?? userData?.user ?? null;
       const isUserVerified = !!currentUser?.email_confirmed_at;
+
+      console.log('[Auth] Resolved user:', currentUser);
+      console.log('[Auth] Email verified:', isUserVerified);
 
       setUser(currentUser);
       setIsAuthenticated(!!currentUser);
       setIsVerified(isUserVerified);
       setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
       setIsLoading(false);
+      console.log('[Auth] Auth state updated.');
     };
 
     initializeAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
       const isUserVerified = !!currentUser?.email_confirmed_at;
+
+      console.log(`[Auth] Auth state change: ${event}`);
+      console.log('[Auth] Session:', session);
+      console.log('[Auth] User:', currentUser);
+      console.log('[Auth] Verified:', isUserVerified);
 
       setUser(currentUser);
       setIsAuthenticated(!!currentUser);
@@ -72,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
 
       if (!session) {
-        // SIGNED_OUT or session expired
+        console.log('[Auth] User signed out or session expired');
         setUser(null);
         setIsAuthenticated(false);
         setIsVerified(false);
@@ -82,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
-
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, planId: string) => {
     try {
@@ -189,38 +200,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Clear all storage and cookies first
+      console.log('[Auth] Signing out...');
+
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        console.error('[Auth] Supabase sign-out error:', error);
+        // Proceed to clear local data even if Supabase sign-out fails
+      }
+
+      // Clear all auth states and local storage
       clearAuthData();
-
-      // Sign out from Supabase with global scope
-      const { error } = await supabase.auth.signOut({
-        scope: 'global' // This ensures all sessions are terminated
-      });
-
-      if (error) throw error;
-
-      // Clear Supabase session
-      await supabase.auth.clearSession();
-
-      // Clear all auth states
       setIsAuthenticated(false);
       setIsVerified(false);
       setUser(null);
       setVerificationEmail(null);
 
-      // Force a complete page reload and redirect to home
+      console.log('[Auth] Sign-out successful. Redirecting to home...');
+      // Redirect to home
       window.location.href = '/';
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('[Auth] Sign-out failed:', error);
 
-      // Even if there's an error, try to clear everything
+      // Ensure local data is cleared even if an error occurs
       clearAuthData();
       setIsAuthenticated(false);
       setIsVerified(false);
       setUser(null);
       setVerificationEmail(null);
 
-      // Force reload anyway to ensure clean state
+      // Force reload to ensure clean state
       window.location.href = '/';
 
       throw new AuthenticationError('sign_out_failed', 'Failed to sign out. Please try again.');

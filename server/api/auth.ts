@@ -40,7 +40,9 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({
+    scope: 'local'
+  });
   if (error) throw error;
 };
 

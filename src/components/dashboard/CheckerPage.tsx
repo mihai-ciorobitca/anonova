@@ -107,7 +107,7 @@ const CheckerPage = () => {
   return (
     <div className="min-h-screen bg-black text-white p-4 space-y-4">
       {/* Controls */}
-      <div className="bg-[#1a1a1a] sticky top-0 z-50 p-4 rounded-lg flex flex-col md:flex-row justify-between gap-4">
+      <div className="bg-[#1a1a1a] sticky top-0 z-30 p-4 rounded-lg flex flex-col md:flex-row justify-between gap-4">
         <div className="flex gap-2 flex-grow">
           <input
             type="text"
