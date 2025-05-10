@@ -11,7 +11,7 @@ const DashboardLayout = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { setIsAuthenticated, setIsVerified, user } = useAuth();
+  const { user, signOut } = useAuth();
   const { credits, loading: creditsLoading } = useUser();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -57,10 +57,15 @@ const DashboardLayout = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setIsVerified(false);
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      console.log('[Dashboard] Logging out...');
+      await signOut(); // Call the signOut function from AuthContext
+      console.log('[Dashboard] Logout successful. Redirecting to home...');
+      navigate('/');
+    } catch (error) {
+      console.error('[Dashboard] Logout failed:', error);
+    }
   };
 
   return (

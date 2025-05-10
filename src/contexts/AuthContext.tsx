@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string, planId: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, planId?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             first_name: firstName,
             last_name: lastName,
-            plan_id: planId,
+            plan_id: planId || '',
             support_id: `ANV-${Date.now().toString(36).toUpperCase()}`
           },
           emailRedirectTo: `${window.location.origin}/verify-email`
@@ -208,29 +208,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('[Auth] Supabase sign-out error:', error);
         // Proceed to clear local data even if Supabase sign-out fails
+      } else {
+        console.log('[Auth] Supabase sign-out successful.');
       }
 
       // Clear all auth states and local storage
+      console.log('[Auth] Clearing local storage, session storage, and cookies...');
       clearAuthData();
+      console.log('[Auth] Local data cleared.');
+
       setIsAuthenticated(false);
       setIsVerified(false);
       setUser(null);
       setVerificationEmail(null);
 
-      console.log('[Auth] Sign-out successful. Redirecting to home...');
-      // Redirect to home
-      window.location.href = '/';
+      console.log('[Auth] State reset. Waiting before redirecting to home...');
+
+      // Wait for a short delay to ensure local storage is cleared
+      setTimeout(() => {
+        console.log('[Auth] Redirecting to home now.');
+        window.location.href = '/';
+      }, 500);
     } catch (error) {
       console.error('[Auth] Sign-out failed:', error);
 
       // Ensure local data is cleared even if an error occurs
+      console.log('[Auth] Clearing local storage, session storage, and cookies after error...');
       clearAuthData();
+      console.log('[Auth] Local data cleared after error.');
+
       setIsAuthenticated(false);
       setIsVerified(false);
       setUser(null);
       setVerificationEmail(null);
 
       // Force reload to ensure clean state
+      console.log('[Auth] Forcing reload to ensure clean state.');
       window.location.href = '/';
 
       throw new AuthenticationError('sign_out_failed', 'Failed to sign out. Please try again.');
