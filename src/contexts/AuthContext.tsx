@@ -34,48 +34,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check current auth status
     const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const isUserVerified = !!session?.user.email_confirmed_at;
-      setIsAuthenticated(!!session);
-      setIsVerified(isUserVerified);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+      setIsLoading(true);
 
-      // If user is authenticated but not verified, store their email
-      if (session && !isUserVerified) {
-        setVerificationEmail(session.user.email);
-      }
+      const {
+        data: { session },
+        error
+      } = await supabase.auth.getSession();
+
+      // Optionally fetch user directly to ensure freshness
+      const {
+        data: userData,
+        error: userError
+      } = await supabase.auth.getUser();
+
+      const currentUser = session?.user ?? userData?.user ?? null;
+      const isUserVerified = !!currentUser?.email_confirmed_at;
+
+      setUser(currentUser);
+      setIsAuthenticated(!!currentUser);
+      setIsVerified(isUserVerified);
+      setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
+      setIsLoading(false);
     };
 
     initializeAuth();
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const isUserVerified = !!session?.user.email_confirmed_at;
-      setIsAuthenticated(!!session);
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      const isUserVerified = !!currentUser?.email_confirmed_at;
+
+      setUser(currentUser);
+      setIsAuthenticated(!!currentUser);
       setIsVerified(isUserVerified);
-      setUser(session?.user ?? null);
+      setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
 
-      // If user is authenticated but not verified, store their email
-      if (session && !isUserVerified) {
-        setVerificationEmail(session.user.email);
-      }
-
-      // Clear states on sign out
-      if (event === 'SIGNED_OUT') {
+      if (!session) {
+        // SIGNED_OUT or session expired
+        setUser(null);
         setIsAuthenticated(false);
         setIsVerified(false);
-        setUser(null);
         setVerificationEmail(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, planId: string) => {
     try {
@@ -104,14 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     } catch (error: any) {
       console.error('Sign up error:', error);
-      
+
       if (error.message?.includes('already registered')) {
         throw new AuthenticationError('user_already_exists', 'An account with this email already exists. Please sign in instead.');
       }
       if (error.message?.includes('Password should be at least 6 characters')) {
         throw new AuthenticationError('weak_password', 'Password must be at least 6 characters long.');
       }
-      
+
       throw new AuthenticationError('sign_up_failed', 'Failed to create account. Please try again.');
     }
   };
@@ -189,12 +196,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut({
         scope: 'global' // This ensures all sessions are terminated
       });
-      
+
       if (error) throw error;
 
       // Clear Supabase session
       await supabase.auth.clearSession();
-      
+
       // Clear all auth states
       setIsAuthenticated(false);
       setIsVerified(false);
@@ -205,7 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.location.href = '/';
     } catch (error) {
       console.error('Sign out error:', error);
-      
+
       // Even if there's an error, try to clear everything
       clearAuthData();
       setIsAuthenticated(false);

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, ChangeEvent } from "react";
 import Button from "../Button";
+import Checkbox from '../Checkbox';
 
 interface RowData {
   phone: string;
@@ -173,9 +174,9 @@ const CheckerPage = () => {
                       {data.url}
                     </Button>
                   </td>
+
                   <td className="px-4 py-3">
-                    <input 
-                      type="checkbox"
+                    <Checkbox
                       checked={data.checked}
                       onChange={(e) => updateRow(index, { checked: e.target.checked })}
                     />
