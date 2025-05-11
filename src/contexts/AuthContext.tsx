@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, AuthError } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
@@ -40,12 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const {
         data: { session },
-        error
       } = await supabase.auth.getSession();
 
       const {
         data: userData,
-        error: userError
       } = await supabase.auth.getUser();
 
       console.log('[Auth] Session:', session);
@@ -60,7 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
       setIsAuthenticated(!!currentUser);
       setIsVerified(isUserVerified);
-      setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
+      setVerificationEmail(
+        !isUserVerified && currentUser && currentUser.email ? currentUser.email : null
+      );
       setIsLoading(false);
       console.log('[Auth] Auth state updated.');
     };
@@ -81,7 +81,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
       setIsAuthenticated(!!currentUser);
       setIsVerified(isUserVerified);
-      setVerificationEmail(!isUserVerified && currentUser ? currentUser.email : null);
+      setVerificationEmail(
+        !isUserVerified && currentUser && currentUser.email ? currentUser.email : null
+      );
 
       if (!session) {
         console.log('[Auth] User signed out or session expired');

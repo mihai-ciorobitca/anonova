@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Shield, Key, Lock, Save, User, Mail, Camera, Pencil, Clock, Loader, Check, X } from 'lucide-react';
+import { Shield, Key, Save, User, Mail, Camera, Pencil, Clock, Loader, Check, X } from 'lucide-react';
 import Button from '../Button';
 import GlitchText from '../GlitchText';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,13 +28,6 @@ const MatrixLoader = () => (
   </div>
 );
 
-// Plan ID to name mapping
-const PLAN_NAMES = {
-  'b656d741-4e93-474a-81ee-373f3e1af15e': 'Free Plan',
-  '4c8dfd01-a537-4038-87aa-5ed665e4a4fb': 'Pro Plan',
-  'f224bb82-2ada-494b-9f04-75b5191f11a2': 'Enterprise Plan'
-} as const;
-
 const SettingsPage = () => {
   const { user } = useAuth();
   const [twoFactorMethod, setTwoFactorMethod] = useState('authenticator');
@@ -49,7 +42,6 @@ const SettingsPage = () => {
   const [userPlan, setUserPlan] = useState<string>('Loading...');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Profile data state
   const [profileData, setProfileData] = useState({
     firstName: user?.user_metadata?.first_name || '',
     lastName: user?.user_metadata?.last_name || '',
@@ -62,20 +54,19 @@ const SettingsPage = () => {
     }),
     lastLogin: 'Today at 2:30 PM',
     timezone: 'UTC-5 (Eastern Time)',
-    role: '' // Will be updated when plan is fetched
+    role: ''
   });
 
-  // Fetch user's plan when component mounts
   useEffect(() => {
     const fetchUserPlan = async () => {
-      setLoading(true); // Start loading
+      setLoading(true);
       if (!user) {
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('users')
           .select(`
             plan_id,
@@ -86,9 +77,9 @@ const SettingsPage = () => {
           .eq('id', user.id)
           .single();
 
-        if (error) throw error;
-
-        const planName = data?.pricing_plans?.name || 'Free Plan';
+        const planName = Array.isArray(data?.pricing_plans) && data.pricing_plans[0]?.name
+          ? data.pricing_plans[0].name
+          : 'Free Plan';
         setUserPlan(planName);
         setProfileData(prev => ({
           ...prev,
@@ -102,24 +93,11 @@ const SettingsPage = () => {
           role: 'Free Plan Member'
         }));
       } finally {
-        setLoading(false); // End loading
+        setLoading(false);
       }
     };
 
     fetchUserPlan();
-  }, [user]);
-
-  // Update profile data when user metadata changes
-  useEffect(() => {
-    if (user) {
-      setProfileData(prev => ({
-        ...prev,
-        firstName: user.user_metadata?.first_name || '',
-        lastName: user.user_metadata?.last_name || '',
-        email: user.email || '',
-        avatar: user.user_metadata?.avatar_url || prev.avatar
-      }));
-    }
   }, [user]);
 
   const handleProfileUpdate = async () => {
@@ -151,12 +129,10 @@ const SettingsPage = () => {
     setSuccess('');
 
     try {
-      // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      // Delete old avatar if exists
       if (user.user_metadata?.avatar_url) {
         const oldPath = user.user_metadata.avatar_url.split('/').pop();
         if (oldPath) {
@@ -166,26 +142,22 @@ const SettingsPage = () => {
         }
       }
 
-      // Upload new file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update user metadata with new avatar URL
       const { data: userData, error: updateError } = await supabase.auth.updateUser({
         data: { avatar_url: publicUrl }
       });
 
       if (updateError) throw updateError;
 
-      // Update local state with new avatar
       if (userData.user) {
         setProfileData(prev => ({
           ...prev,
@@ -199,7 +171,6 @@ const SettingsPage = () => {
       setError('Failed to upload photo. Please try again.');
     } finally {
       setLoading(false);
-      // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -231,15 +202,13 @@ const SettingsPage = () => {
     setError('');
 
     try {
-      // In a real app, you would verify the code here
       const code = verificationCode.join('');
-      if (code === '123456') { // Mock verification
+      if (code === '123456') {
         setProfileData(prev => ({ ...prev, email: newEmail }));
         setIsChangingEmail(false);
         setShowVerification(false);
         setSuccess('Email updated successfully!');
 
-        // Reset states
         setNewEmail('');
         setVerificationCode(['', '', '', '', '', '']);
       } else {
@@ -287,7 +256,6 @@ const SettingsPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {/* My Profile */}
             <div className="space-y-6">
               <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
                 <h3 className="text-xl font-bold text-[#0F0] mb-6 flex items-center gap-2">
@@ -330,7 +298,6 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                {/* Success Message */}
                 {success && (
                   <div className="flex items-center gap-2 text-[#0F0] bg-[#0F0]/10 p-4 rounded-lg mb-4">
                     <Check className="w-5 h-5" />
@@ -338,7 +305,6 @@ const SettingsPage = () => {
                   </div>
                 )}
 
-                {/* Error Message */}
                 {error && (
                   <div className="flex items-center gap-2 text-red-500 bg-red-500/10 p-4 rounded-lg mb-4">
                     <X className="w-5 h-5" />
@@ -470,7 +436,6 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Security Settings */}
             <div className="space-y-6">
               <div className="bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-6">
                 <h3 className="text-xl font-bold text-[#0F0] mb-6 flex items-center gap-2">
@@ -478,7 +443,6 @@ const SettingsPage = () => {
                   Security Settings
                 </h3>
 
-                {/* Password Change */}
                 <div className="space-y-4 mb-6">
                   <label className="block text-sm text-gray-400">Change Password</label>
                   <input
@@ -498,7 +462,6 @@ const SettingsPage = () => {
                   />
                 </div>
 
-                {/* 2FA Settings */}
                 <div className="space-y-4">
                   <label className="block text-sm text-gray-400">Two-Factor Authentication</label>
                   <div className="grid grid-cols-2 gap-4">
@@ -525,7 +488,6 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                {/* Save Button */}
                 <Button className="w-full mt-6">
                   <Save className="w-4 h-4 mr-2" />
                   Save Security Settings
@@ -534,7 +496,6 @@ const SettingsPage = () => {
             </div>
           </div>
 
-          {/* Email Change Modal */}
           {isChangingEmail && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
               <div
@@ -575,7 +536,6 @@ const SettingsPage = () => {
 
                 {showVerification ? (
                   <div className="space-y-6">
-                    {/* Success Message */}
                     {success && (
                       <div className="flex items-center gap-2 text-[#0F0] bg-[#0F0]/10 p-4 rounded-lg">
                         <Check className="w-5 h-5" />
@@ -583,7 +543,6 @@ const SettingsPage = () => {
                       </div>
                     )}
 
-                    {/* Error Message */}
                     {error && (
                       <div className="flex items-center gap-2 text-red-500 bg-red-500/10 p-4 rounded-lg">
                         <X className="w-5 h-5" />
@@ -591,7 +550,6 @@ const SettingsPage = () => {
                       </div>
                     )}
 
-                    {/* Code Input Grid */}
                     <div className="grid grid-cols-6 gap-3">
                       {verificationCode.map((digit, index) => (
                         <input
@@ -634,7 +592,6 @@ const SettingsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Error Message */}
                     {error && (
                       <div className="flex items-center gap-2 text-red-500 bg-red-500/10 p-4 rounded-lg">
                         <X className="w-5 h-5" />

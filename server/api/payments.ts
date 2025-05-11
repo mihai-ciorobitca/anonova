@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
+import express from 'express';
+import { createPayment } from '../../src/services/cryptomus';
 
 const supabase = createClient<Database>(
   process.env.SUPABASE_URL!,
@@ -49,3 +51,23 @@ export const getReferralEarnings = async (userId: string) => {
   if (error) throw error;
   return data;
 };
+
+const router = express.Router();
+
+router.post('/create', async (req, res) => {
+  const { amount, currency, orderId, callbackUrl } = req.body;
+
+  if (!amount || !currency || !orderId || !callbackUrl) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const payment = await createPayment(amount, currency, orderId, callbackUrl);
+    res.status(200).json(payment);
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(500).json({ error: 'Failed to create payment' });
+  }
+});
+
+export default router;
