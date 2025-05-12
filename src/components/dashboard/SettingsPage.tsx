@@ -241,6 +241,38 @@ const SettingsPage = () => {
     }
   };
 
+  const handlePasswordChange = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const currentPassword = (document.querySelector('input[placeholder="Current Password"]') as HTMLInputElement).value;
+      const newPassword = (document.querySelector('input[placeholder="New Password"]') as HTMLInputElement).value;
+      const confirmPassword = (document.querySelector('input[placeholder="Confirm New Password"]') as HTMLInputElement).value;
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        throw new Error('All fields are required.');
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error('New password and confirmation do not match.');
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setSuccess('Password updated successfully!');
+    } catch (err) {
+      setError((err as Error).message || 'Failed to update password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
       {loading ? (
@@ -488,9 +520,9 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <Button className="w-full mt-6">
+                <Button className="w-full mt-6" onClick={handlePasswordChange} disabled={loading}>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Security Settings
+                  {loading ? 'Saving...' : 'Save Security Settings'}
                 </Button>
               </div>
             </div>
