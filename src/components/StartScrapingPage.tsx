@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Search, Users, UserPlus, Shield, User, Mail, Key, Eye, EyeOff, Loader, ArrowRight, Hash, Terminal, Zap, Database, AlertCircle, CreditCard, Check, Lock, Globe, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, User, Mail, Key, Eye, EyeOff, Loader, ArrowRight, Terminal, Zap, Database, AlertCircle, Lock, Globe, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from './Button';
 import GlitchText from './GlitchText';
 import LegalNotices from './LegalNotices';
 import { useAuth, AuthenticationError } from '../contexts/AuthContext';
 import { useUser } from '../contexts/UserContext';
-import { useTranslation } from 'react-i18next';
 import NavigationButtons from './NavigationButtons';
-import { runApifyExtraction, type ExtractedData } from '../lib/apify';
+import { runApifyExtraction } from '../lib/apify';
+import { supabase } from '../lib/supabase';
 
 type Platform = 'instagram' | 'linkedin' | 'facebook' | 'twitter';
 
@@ -29,7 +29,7 @@ interface ExtractionConfig {
 
 interface ExtractionResult {
   status: 'completed' | 'failed';
-  data: ExtractedData[];
+  data: any[];
   error?: string;
 }
 
@@ -89,11 +89,32 @@ const features = [
   }
 ];
 
+const renderEmails = (emails: string[]) =>
+  emails.map((email, i) => (
+    <a
+      key={i}
+      href={`mailto:${email}`}
+      className="text-[#0F0] hover:underline block"
+    >
+      {email}
+    </a>
+  ));
+
+const renderPhones = (phones: string[]) =>
+  phones.map((phone, i) => (
+    <a
+      key={i}
+      href={`tel:${phone}`}
+      className="text-[#0F0] hover:underline block"
+    >
+      {phone}
+    </a>
+  ));
+
 const StartScrapingPage = () => {
-  const { t } = useTranslation();
+  const { isAuthenticated, signUp, signIn } = useAuth();
+  const { hasUsedFreeCredits } = useUser();
   const navigate = useNavigate();
-  const { isAuthenticated, isVerified, signUp, signIn, setVerificationEmail } = useAuth();
-  const { credits, hasUsedFreeCredits } = useUser();
   const [authState, setAuthState] = useState<'login' | 'register'>('register');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -105,6 +126,7 @@ const StartScrapingPage = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
 
   const [extractionConfig, setExtractionConfig] = useState<ExtractionConfig>({
     isHashtagMode: false,
@@ -121,6 +143,91 @@ const StartScrapingPage = () => {
     platform: 'instagram'
   });
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      navigate(`/reset-password?code=${code}`);
+    }
+  }, [navigate]);
+
+  const ResetPasswordForm = () => {
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email,{
+          redirectTo: `${window.location.origin}/start-scraping`
+        });
+        if (error) {
+          throw error;
+        }
+        setSuccess('Password reset email sent successfully!');
+      } catch (err) {
+        setError(err.message || 'Failed to send reset email. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <div>
+      <div className="text-center mb-8">
+        <Terminal className="w-16 h-16 text-[#0F0] mx-auto mb-4 animate-[float_4s_ease-in-out_infinite]" />
+        <h3 className="text-2xl font-bold text-[#0F0] mb-2">
+        Reset Your Password
+        </h3>
+        <p className="text-gray-400">
+        Get a link to reset your password
+        </p>
+      </div>
+      <form onSubmit={handleResetPassword} className="space-y-6">
+        {success && (
+        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500">
+          {success}
+        </div>
+        )}
+        {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500">
+          {error}
+        </div>
+        )}
+        <div>
+        <label htmlFor="reset-email" className="sr-only">Email address</label>
+        <input
+          id="reset-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+          placeholder="Enter your email"
+        />
+        </div>
+        <Button
+        type="submit"
+        className="w-full"
+        disabled={loading}
+        >
+        {loading ? (
+          <Loader className="h-5 w-5 animate-spin" />
+        ) : (
+          'Send Reset Link'
+        )}
+        </Button>
+      </form>
+      </div>
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -133,11 +240,7 @@ const StartScrapingPage = () => {
         navigate('/verify-email');
       } else {
         await signIn(email, password);
-        if (!isVerified) {
-          navigate('/verify-email');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       }
     } catch (error: any) {
       if (error instanceof AuthenticationError) {
@@ -168,7 +271,7 @@ const StartScrapingPage = () => {
     let retryCount = 0;
     const maxRetries = 3;
 
-    const attemptExtraction = async (): Promise<ExtractedData[]> => {
+    const attemptExtraction = async (): Promise<any[]> => {
       try {
         return await runApifyExtraction({
           keyword,
@@ -242,146 +345,159 @@ const StartScrapingPage = () => {
             
             <div className="relative bg-black/40 backdrop-blur-sm border border-[#0F0]/20 rounded-xl p-8">
               {!isAuthenticated ? (
-                <>
-                  <div className="text-center mb-8">
-                    <Terminal className="w-16 h-16 text-[#0F0] mx-auto mb-4 animate-[float_4s_ease-in-out_infinite]" />
-                    <h3 className="text-2xl font-bold text-[#0F0] mb-2">
-                      {authState === 'login' ? 'Welcome Back' : 'Create Account'}
-                    </h3>
-                    <p className="text-gray-400">
-                      {authState === 'login' 
-                        ? 'Sign in to start extracting data'
-                        : 'Register to access advanced extraction features'}
-                    </p>
-                  </div>
-
-                  <form className="space-y-6" onSubmit={handleSubmit}>
-                    {error && (
-                      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5" />
-                        {error}
-                      </div>
-                    )}
-
-                    {authState === 'register' && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="firstName" className="sr-only">First Name</label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                            <input
-                              id="firstName"
-                              name="firstName"
-                              type="text"
-                              required
-                              value={firstName}
-                              onChange={(e) => setFirstName(e.target.value)}
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="First Name"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label htmlFor="lastName" className="sr-only">Last Name</label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                            <input
-                              id="lastName"
-                              name="lastName"
-                              type="text"
-                              required
-                              value={lastName}
-                              onChange={(e) => setLastName(e.target.value)}
-                              className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                              placeholder="Last Name"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <label htmlFor="email" className="sr-only">Email address</label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          id="email"
-                          name="email"
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                          placeholder="Email address"
-                        />
-                      </div>
+                showResetForm ? (
+                  <ResetPasswordForm />
+                ) : (
+                  <>
+                    <div className="text-center mb-8">
+                      <Terminal className="w-16 h-16 text-[#0F0] mx-auto mb-4 animate-[float_4s_ease-in-out_infinite]" />
+                      <h3 className="text-2xl font-bold text-[#0F0] mb-2">
+                        {authState === 'login' ? 'Welcome Back' : 'Create Account'}
+                      </h3>
+                      <p className="text-gray-400">
+                        {authState === 'login' 
+                          ? 'Sign in to start extracting data'
+                          : 'Register to access advanced extraction features'}
+                      </p>
                     </div>
 
-                    <div>
-                      <label htmlFor="password" className="sr-only">Password</label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          id="password"
-                          name="password"
-                          type={showPassword ? 'text' : 'password'}
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
-                          placeholder="Password"
+                    <form className="space-y-6" onSubmit={handleSubmit}>
+                      {error && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5" />
+                          {error}
+                        </div>
+                      )}
+
+                      {authState === 'register' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label htmlFor="firstName" className="sr-only">First Name</label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                              <input
+                                id="firstName"
+                                name="firstName"
+                                type="text"
+                                required
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                                placeholder="First Name"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label htmlFor="lastName" className="sr-only">Last Name</label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                              <input
+                                id="lastName"
+                                name="lastName"
+                                type="text"
+                                required
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                                placeholder="Last Name"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label htmlFor="email" className="sr-only">Email address</label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                            placeholder="Email address"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="password" className="sr-only">Password</label>
+                        <div className="relative">
+                          <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <input
+                            id="password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-black/50 border border-[#0F0]/30 rounded-lg py-3 px-10 text-white placeholder-gray-500 focus:border-[#0F0] focus:ring-1 focus:ring-[#0F0] transition-all"
+                            placeholder="Password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0F0] transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {authState === 'register' && (
+                        <LegalNotices 
+                          type="extraction"
+                          checked={agreedToTerms}
+                          onChange={setAgreedToTerms}
                         />
+                      )}
+
+                      <Button
+                        type="submit"
+                        className="w-full group"
+                        disabled={loading || (authState === 'register' && (!agreedToTerms || !firstName || !lastName))}
+                      >
+                        {loading ? (
+                          <Loader className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            {authState === 'login' ? 'Sign in' : 'Create account'}
+                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                          </span>
+                        )}
+                      </Button>
+
+                      <div className="text-center">
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0F0] transition-colors"
+                          onClick={() => {
+                            setAuthState(authState === 'login' ? 'register' : 'login');
+                            setFirstName('');
+                            setLastName('');
+                            setError('');
+                          }}
+                          className="text-[#0F0]/70 hover:text-[#0F0] transition-colors"
                         >
-                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          {authState === 'login' 
+                            ? "Don't have an account? Sign up"
+                            : 'Already have an account? Sign in'}
                         </button>
                       </div>
-                    </div>
-
-                    {authState === 'register' && (
-                      <LegalNotices 
-                        type="extraction"
-                        checked={agreedToTerms}
-                        onChange={setAgreedToTerms}
-                      />
-                    )}
-
-                    <Button
-                      type="submit"
-                      className="w-full group"
-                      disabled={loading || (authState === 'register' && (!agreedToTerms || !firstName || !lastName))}
-                    >
-                      {loading ? (
-                        <Loader className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          {authState === 'login' ? 'Sign in' : 'Create account'}
-                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                        </span>
-                      )}
-                    </Button>
-
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthState(authState === 'login' ? 'register' : 'login');
-                          setFirstName('');
-                          setLastName('');
-                          setError('');
-                        }}
-                        className="text-[#0F0]/70 hover:text-[#0F0] transition-colors"
-                      >
-                        {authState === 'login' 
-                          ? "Don't have an account? Sign up"
-                          : 'Already have an account? Sign in'}
-                      </button>
-                    </div>
-                  </form>
-                </>
+                      <div className='text-center'>
+                        <button
+                          type="button"
+                          onClick={() => setShowResetForm(!showResetForm)}
+                          className="text-[#0F0]/70 hover:text-[#0F0] transition-colors"
+                        >
+                          {showResetForm ? 'Back to Sign In' : 'Forgot Password?'}
+                        </button> 
+                      </div>
+                    </form>
+                  </>
+                )
               ) : (
                 <>
                   <div className="space-y-6">
@@ -573,7 +689,7 @@ const StartScrapingPage = () => {
                             <AlertCircle className="w-5 h-5" />
                             {extractionResult.error}
                           </div>
-                        ) : extractionResult.data.length > 0 ? (
+                        ) : (
                           <div className="overflow-x-auto">
                             <table className="w-full">
                               <thead>
@@ -587,67 +703,55 @@ const StartScrapingPage = () => {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-[#0F0]/10">
-                                {extractionResult.data.map((item, index) => (
-                                  <tr key={index} className="hover:bg-[#0F0]/5 transition-colors">
-                                    <td className="px-6 py-4">{item.lead || '-'}</td>
-                                    <td className="px-6 py-4">{item.username || '-'}</td>
-                                    <td className="px-6 py-4">
-                                      <a 
-                                        className="text-[#0F0] hover:underline"
-                                        href={item.userLink}
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          window.open(item.userLink, '_blank', 'noopener,noreferrer');
-                                        }}
-                                        target="_blank"
-                                        rel="noopener noreferrer" 
-                                      >
-                                        {item.username || item.userLink.split('/').pop() || 'View Profile'}
-                                      </a>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      {item.emails.length > 0 ? (
-                                        <div className="space-y-1">
-                                          {item.emails.map((email, i) => ( 
-                                            <a
-                                              key={i}
-                                              href={`mailto:${email}`}
-                                              className="text-[#0F0] hover:underline block"
-                                            >
-                                              {email}
-                                            </a>
-                                          ))}
+                                {extractionResult && extractionResult.data && extractionResult.data.length > 0 ? (
+                                  extractionResult.data.map((item, index) => (
+                                    <tr key={index} className="hover:bg-[#0F0]/5 transition-colors">
+                                      <td className="px-6 py-4">{item.lead || '-'}</td>
+                                      <td className="px-6 py-4">{item.username || '-'}</td>
+                                      <td className="px-6 py-4">
+                                        <a 
+                                          className="text-[#0F0] hover:underline"
+                                          href={item.userLink}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            window.open(item.userLink, '_blank', 'noopener,noreferrer');
+                                          }}
+                                          target="_blank"
+                                          rel="noopener noreferrer" 
+                                        >
+                                          {item.username || item.userLink.split('/').pop() || 'View Profile'}
+                                        </a>
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {item.emails.length > 0 ? (
+                                          <div className="space-y-1">
+                                            {renderEmails(item.emails)}
+                                          </div>
+                                        ) : '-'}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {item.phones.length > 0 ? (
+                                          <div className="space-y-1">
+                                            {renderPhones(item.phones)}
+                                          </div>
+                                        ) : '-'}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        <div className="max-w-xs truncate" title={item.summary}>
+                                          {item.summary || '-'}
                                         </div>
-                                      ) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      {item.phones.length > 0 ? (
-                                        <div className="space-y-1">
-                                          {item.phones.map((phone, i) => (
-                                            <a
-                                              key={i}
-                                              href={`tel:${phone}`}
-                                              className="text-[#0F0] hover:underline block"
-                                            >
-                                              {phone}
-                                            </a>
-                                          ))}
-                                        </div>
-                                      ) : '-'}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                      <div className="max-w-xs truncate" title={item.summary}>
-                                        {item.summary || '-'}
-                                      </div>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan="6" className="text-center py-4 text-gray-400">
+                                      No data available.
                                     </td>
                                   </tr>
-                                ))}
+                                )}
                               </tbody>
                             </table>
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-400">
-                            No results found for your search criteria
                           </div>
                         )}
                       </div>

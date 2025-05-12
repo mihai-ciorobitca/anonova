@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../types/database';
+import express from 'express';
 
 const supabase = createClient<Database>(
   process.env.VITE_SUPABASE_URL!,
@@ -63,3 +64,24 @@ export const getCurrentUser = async () => {
   if (error) throw error;
   return user;
 };
+
+const router = express.Router();
+
+// Reset password endpoint
+router.post('/reset-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    await resetPassword(email);
+    res.status(200).json({ message: 'Password reset email sent successfully' });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ error: 'Failed to send password reset email' });
+  }
+});
+
+export default router;

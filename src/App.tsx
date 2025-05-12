@@ -25,6 +25,7 @@ import DemoPage from "./components/DemoPage";
 import FeaturesPage from "./components/FeaturesPage";
 import FeatureDetailPage from "./components/FeatureDetailPage";
 import VerifyEmail from "./components/VerifyEmail";
+import PasswordResetPage from "./components/PasswordResetPage";
 import PrivateRoute from "./components/PrivateRoute";
 import Header from "./components/Header";
 import OnboardingTutorial from "./components/OnboardingTutorial";
@@ -85,6 +86,7 @@ function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/start-scraping" element={<StartScrapingPage />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
 
           {/* Protected Dashboard Routes */}
           <Route
