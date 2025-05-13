@@ -486,15 +486,15 @@ const StartScrapingPage = () => {
                             : 'Already have an account? Sign in'}
                         </button>
                       </div>
-                      <div className='text-center'>
+                      {authState === 'login' && (
                         <button
                           type="button"
-                          onClick={() => setShowResetForm(!showResetForm)}
-                          className="text-[#0F0]/70 hover:text-[#0F0] transition-colors"
+                          onClick={() => setShowResetForm(true)}
+                          className="text-[#0F0]/70 hover:text-[#0F0] transition-colors block mx-auto"
                         >
-                          {showResetForm ? 'Back to Sign In' : 'Forgot Password?'}
-                        </button> 
-                      </div>
+                          Forgot Password? Reset
+                        </button>
+                      )}
                     </form>
                   </>
                 )
