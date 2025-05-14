@@ -48,10 +48,27 @@ const CheckerPage = () => {
   };
 
   const handleDownload = () => {
+    if (!fileName) {
+      alert("Please enter a filename.");
+      return;
+    }
+
+    const selectedCategory = newOption; // Use the dropdown value for category
+    if (!selectedCategory) {
+      alert("Please select a category to download.");
+      return;
+    }
+
     const csv = tableData
-      .filter((row) => row.checked)
+      .filter((row) => row.category === selectedCategory) // Filter by category
       .map((row) => `${row.phone},${row.url}`)
       .join("\n");
+
+    if (!csv) {
+      alert("No data found for the selected category.");
+      return;
+    }
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -136,6 +153,18 @@ const CheckerPage = () => {
             onChange={(e) => setFileName(e.target.value)}
             className="px-4 py-2 rounded border border-gray-600 bg-black text-white flex-grow"
           />
+          <select
+            value={newOption}
+            onChange={(e) => setNewOption(e.target.value)}
+            className="px-3 py-2 rounded border border-gray-600 bg-black text-white flex-grow"
+          >
+            <option value="">Select Category</option>
+            {options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
           <input
             type="file"
             onChange={handleFileUpload}
@@ -156,7 +185,6 @@ const CheckerPage = () => {
               <tr className="text-center font-semibold text-sm text-gray-300">
                 <th className="px-4 py-2">Phone</th>
                 <th className="px-4 py-2">Link</th>
-                <th className="px-4 py-2">Check</th>
                 <th className="px-4 py-2">Category</th>
                 <th className="px-4 py-2">Delete</th>
               </tr>
@@ -182,13 +210,6 @@ const CheckerPage = () => {
                     >
                       {data.url}
                     </Button>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <Checkbox
-                      checked={data.checked}
-                      onChange={(e) => updateRow(index, { checked: e.target.checked })}
-                    />
                   </td>
                   <td className="px-4 py-3">
                     <select
@@ -225,11 +246,6 @@ const CheckerPage = () => {
                 <Button variant="secondary" onClick={() => openInstagramProfile(data.url)}>Link</Button>
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={data.checked}
-                  onChange={(e) => updateRow(index, { checked: e.target.checked })}
-                />
                 <select
                   value={data.category}
                   onChange={(e) => updateRow(index, { category: e.target.value })}
