@@ -92,7 +92,16 @@ const CheckerPage = () => {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!"));
+    navigator.clipboard.writeText(text).then(() => {
+      const notification = document.createElement('div');
+      notification.textContent = 'Copied to clipboard!';
+      notification.className = 'fixed bottom-5 right-5 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow-lg';
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 500); // Remove notification after 3 seconds
+    });
   };
 
   const openInstagramProfile = (url: string) => {
